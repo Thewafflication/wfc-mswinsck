@@ -29,6 +29,23 @@ wfc run examples/winsock-echo/echo.vbp --gui
 
 The images are made with `wfc run ... --gui --screenshots <dir>`.
 
+### Linux (Winelib)
+
+![wfc-mswinsck built and tested on Linux x64 with Winelib](docs/images/linux-winelib-x64.png)
+
+The CI session on Linux x64: the library is built with Wine's `wineg++` and its
+test runs. The same session for [x86](docs/images/linux-winelib-x86.png) and
+[arm64](docs/images/linux-winelib-arm64.png) (arm64 builds only; Wine hangs
+there). These images are rendered from the real CI output by
+`scripts/render_terminal.py`.
+
+### WebAssembly
+
+![The wfc-mswinsck member table in a web page, compiled with Emscripten](docs/images/webassembly.png)
+
+The member table compiled to WebAssembly and listed by a page
+(`web/index.html`), captured in Chromium by `scripts/capture_web.py` in CI.
+
 ## Roadmap, compatibility and platforms
 
 - [ROADMAP.md](ROADMAP.md): milestones from 0.6.x to Microsoft parity,
