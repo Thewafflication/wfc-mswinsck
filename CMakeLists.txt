@@ -116,6 +116,10 @@ target_compile_features(wfc_mswinsck PRIVATE cxx_std_20)
 
 # The socket layer is not part of the DLL: it stays in the program.
 add_library(wfc_mswinsck_io STATIC src/winsock_io.cpp)
+if(WFC_WINELIB)
+  # Wine's socket headers do not mix with the C library's; no sockets yet.
+  target_compile_definitions(wfc_mswinsck_io PUBLIC WFC_WINELIB)
+endif()
 target_include_directories(
   wfc_mswinsck_io
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -162,7 +166,7 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
   add_test(NAME TC-MP0010-mswinsck-tables COMMAND mswinsck_tables_test)
   set_tests_properties(
     TC-MP0010-mswinsck-tables
-    PROPERTIES LABELS "unit;mp-0010;mswinsck"
+    PROPERTIES LABELS "unit;mp-0010;mswinsck" TIMEOUT 120
   )
 
   if(WIN32)

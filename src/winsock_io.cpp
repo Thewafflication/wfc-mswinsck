@@ -1,6 +1,6 @@
 #include <wfc/mswinsck/winsock_io.hpp>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WFC_WINELIB)
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <winsock2.h>
@@ -15,7 +15,7 @@
 
 namespace wfc::net {
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(WFC_WINELIB)
 
 namespace {
 
