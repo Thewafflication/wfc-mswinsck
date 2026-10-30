@@ -10,6 +10,25 @@
 # WFC_MSWINSCK_SHARED) and the functions wfc_enable_strict_warnings and
 # wsp_enable_hardening.
 
+# Standalone build: the library outside WFC. WFC itself adds this directory
+# with add_subdirectory and supplies the project, CTest and the WSP hardening.
+if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+  cmake_minimum_required(VERSION 3.28)
+  project(wfc-mswinsck LANGUAGES CXX)
+  option(WFC_BUILD_TESTS "Build the tests" ON)
+  include(CTest)
+  list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+  include(WfcWarnings)
+  # WSP-SEC-0015: the pinned WSP baseline supplies the hardening flags (not for
+  # the WebAssembly target, whose toolchain has none of them).
+  if(
+    EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/wsp/tools/cmake/WspBuild.cmake"
+    AND NOT EMSCRIPTEN
+  )
+    include("${CMAKE_CURRENT_SOURCE_DIR}/wsp/tools/cmake/WspBuild.cmake")
+  endif()
+endif()
+
 if(NOT DEFINED WFC_OCX_SHARED)
   set(WFC_OCX_SHARED OFF)
 endif()
@@ -117,7 +136,7 @@ endif()
 # The table (any build) and, in the shared build, the DLL itself: a C program
 # loads wfcmswinsck.dll, checks its COM entry points and version resource, and
 # registers and unregisters it in the registry of the current user.
-if(BUILD_TESTING AND WFC_BUILD_TESTS AND WIN32)
+if(BUILD_TESTING AND WFC_BUILD_TESTS)
   add_executable(mswinsck_tables_test tests/mswinsck_tables_test.cpp)
   target_link_libraries(mswinsck_tables_test PRIVATE wfc_mswinsck)
   if(WFC_MSWINSCK_SHARED)
@@ -140,22 +159,24 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS AND WIN32)
     PROPERTIES LABELS "unit;mp-0010;mswinsck"
   )
 
-  add_executable(winsock_io_tests tests/winsock_io_tests.cpp)
-  target_link_libraries(winsock_io_tests PRIVATE wfc_mswinsck_io)
-  target_compile_features(winsock_io_tests PRIVATE cxx_std_20)
-  if(COMMAND wfc_enable_strict_warnings)
-    wfc_enable_strict_warnings(winsock_io_tests)
+  if(WIN32)
+    add_executable(winsock_io_tests tests/winsock_io_tests.cpp)
+    target_link_libraries(winsock_io_tests PRIVATE wfc_mswinsck_io)
+    target_compile_features(winsock_io_tests PRIVATE cxx_std_20)
+    if(COMMAND wfc_enable_strict_warnings)
+      wfc_enable_strict_warnings(winsock_io_tests)
+    endif()
+    if(COMMAND wsp_enable_hardening)
+      wsp_enable_hardening(winsock_io_tests)
+    endif()
+    add_test(NAME TC-MP0010-mswinsck-io COMMAND winsock_io_tests)
+    set_tests_properties(
+      TC-MP0010-mswinsck-io
+      PROPERTIES LABELS "integration;mp-0010;mswinsck" TIMEOUT 60
+    )
   endif()
-  if(COMMAND wsp_enable_hardening)
-    wsp_enable_hardening(winsock_io_tests)
-  endif()
-  add_test(NAME TC-MP0010-mswinsck-io COMMAND winsock_io_tests)
-  set_tests_properties(
-    TC-MP0010-mswinsck-io
-    PROPERTIES LABELS "integration;mp-0010;mswinsck" TIMEOUT 60
-  )
 
-  if(WFC_MSWINSCK_SHARED)
+  if(WIN32 AND WFC_MSWINSCK_SHARED)
     enable_language(C)
     add_executable(mswinsck_dll_test tests/mswinsck_dll_test.c)
     target_link_libraries(mswinsck_dll_test PRIVATE version advapi32)
