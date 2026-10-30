@@ -112,3 +112,74 @@ endif()
 if(COMMAND wsp_enable_hardening)
   wsp_enable_hardening(wfc_mswinsck)
 endif()
+
+# --- Tests --------------------------------------------------------------------
+# The table (any build) and, in the shared build, the DLL itself: a C program
+# loads wfcmswinsck.dll, checks its COM entry points and version resource, and
+# registers and unregisters it in the registry of the current user.
+if(BUILD_TESTING AND WFC_BUILD_TESTS AND WIN32)
+  add_executable(mswinsck_tables_test tests/mswinsck_tables_test.cpp)
+  target_link_libraries(mswinsck_tables_test PRIVATE wfc_mswinsck)
+  if(WFC_MSWINSCK_SHARED)
+    # Next to the DLL, so the program finds it.
+    set_target_properties(
+      mswinsck_tables_test
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  endif()
+  target_compile_features(mswinsck_tables_test PRIVATE cxx_std_20)
+  if(COMMAND wfc_enable_strict_warnings)
+    wfc_enable_strict_warnings(mswinsck_tables_test)
+  endif()
+  if(COMMAND wsp_enable_hardening)
+    wsp_enable_hardening(mswinsck_tables_test)
+  endif()
+  add_test(NAME TC-MP0010-mswinsck-tables COMMAND mswinsck_tables_test)
+  set_tests_properties(
+    TC-MP0010-mswinsck-tables
+    PROPERTIES LABELS "unit;mp-0010;mswinsck"
+  )
+
+  add_executable(winsock_io_tests tests/winsock_io_tests.cpp)
+  target_link_libraries(winsock_io_tests PRIVATE wfc_mswinsck_io)
+  target_compile_features(winsock_io_tests PRIVATE cxx_std_20)
+  if(COMMAND wfc_enable_strict_warnings)
+    wfc_enable_strict_warnings(winsock_io_tests)
+  endif()
+  if(COMMAND wsp_enable_hardening)
+    wsp_enable_hardening(winsock_io_tests)
+  endif()
+  add_test(NAME TC-MP0010-mswinsck-io COMMAND winsock_io_tests)
+  set_tests_properties(
+    TC-MP0010-mswinsck-io
+    PROPERTIES LABELS "integration;mp-0010;mswinsck" TIMEOUT 60
+  )
+
+  if(WFC_MSWINSCK_SHARED)
+    enable_language(C)
+    add_executable(mswinsck_dll_test tests/mswinsck_dll_test.c)
+    target_link_libraries(mswinsck_dll_test PRIVATE version advapi32)
+    add_dependencies(mswinsck_dll_test wfc_mswinsck)
+    if(MSVC)
+      target_compile_options(mswinsck_dll_test PRIVATE /W4 /WX)
+    else()
+      target_compile_options(mswinsck_dll_test PRIVATE -Wall -Wextra -Werror)
+    endif()
+    if(COMMAND wsp_enable_hardening)
+      wsp_enable_hardening(mswinsck_dll_test)
+    endif()
+    add_test(
+      NAME TC-MP0010-mswinsck-dll
+      COMMAND
+        mswinsck_dll_test "$<TARGET_FILE:wfc_mswinsck>" "${WFC_MSWINSCK_VERSION}"
+        "${WFC_LIB_TARGET}"
+    )
+    set_tests_properties(
+      TC-MP0010-mswinsck-dll
+      PROPERTIES
+        LABELS "integration;mp-0010;mswinsck"
+        RESOURCE_LOCK registry
+        SKIP_RETURN_CODE 77
+    )
+  endif()
+endif()
