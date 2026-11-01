@@ -46,13 +46,15 @@ void tcp_round_trip() {
 
     const net::Handle client = net::open(false, error);
     std::string address;
-    net::Progress progress = net::connect(client, "127.0.0.1", port, address, error);
+    net::Progress progress =
+        net::connect(client, "127.0.0.1", port, address, error);
     expect(progress != net::Progress::Failed, "start the connection");
     expect(address == "127.0.0.1", "the resolved address");
     expect(wait_for([&] {
                progress = net::connect_status(client, error);
                return progress != net::Progress::Pending;
-           }) && progress == net::Progress::Done,
+           }) &&
+               progress == net::Progress::Done,
            "the connection completes");
 
     net::Handle accepted = net::kInvalid;
@@ -73,7 +75,8 @@ void tcp_round_trip() {
     expect(wait_for([&] {
                return net::receive(accepted, received, error) > 0 &&
                       received.size() >= 5U;
-           }) && received == "hello",
+           }) &&
+               received == "hello",
            "the server receives what was sent");
 
     net::close(client);
@@ -96,14 +99,17 @@ void udp_round_trip() {
     expect(left != net::kInvalid && right != net::kInvalid, "open UDP sockets");
     expect(net::bind(left, "127.0.0.1", 0, error), "bind the first socket");
     expect(net::bind(right, "127.0.0.1", 0, error), "bind the second socket");
-    expect(net::send_to(left, "datagram", "127.0.0.1", net::local_port(right), error),
+    expect(net::send_to(left, "datagram", "127.0.0.1", net::local_port(right),
+                        error),
            "send a datagram");
     std::string data;
     std::string from;
     int from_port = 0;
     expect(wait_for([&] {
-               return net::receive_from(right, data, from, from_port, error) > 0;
-           }) && data == "datagram",
+               return net::receive_from(right, data, from, from_port, error) >
+                      0;
+           }) &&
+               data == "datagram",
            "the datagram arrives");
     expect(from == "127.0.0.1" && from_port == net::local_port(left),
            "the datagram names its sender");

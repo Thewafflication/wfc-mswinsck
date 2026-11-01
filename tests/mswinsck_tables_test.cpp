@@ -37,7 +37,8 @@ int main() {
                    "an unknown member kind");
         }
         for (std::size_t e = 0; e < entry.event_count; ++e) {
-            expect(entry.events[e].kind == 'm', "an event that is not a method");
+            expect(entry.events[e].kind == 'm',
+                   "an event that is not a method");
         }
     }
     if (failures == 0) {
