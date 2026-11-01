@@ -9,6 +9,12 @@ static const struct wfc_check_class kClasses[] = {
 };
 
 int main(int argc, char** argv) {
-    return wfc_check_dll(argc, argv, L"mswinsck", kClasses,
-                         sizeof(kClasses) / sizeof(kClasses[0]));
+    int checked = wfc_check_dll(argc, argv, L"mswinsck", kClasses,
+                                sizeof(kClasses) / sizeof(kClasses[0]));
+    if (checked != 0) {
+        return checked;
+    }
+    return wfc_check_create(wfc_check_widen(argv[1]),
+                            L"{321E9CDB-8E15-5447-9E85-37085D23CD1E}",
+                            L"LocalPort", L"Close");
 }

@@ -32,11 +32,15 @@ item is present, tested and passing in CI; an unchecked one is planned.
 
 ## 0.7: the library creates its own controls
 
-- [ ] `DllGetClassObject` returns a class factory; the control is created
-      without the WFC evaluator.
+- [x] `DllGetClassObject` returns a class factory; its objects are
+      late-bound (IDispatch) controls built from the member table,
+      without the WFC evaluator (`include/wfc/ocx/class_factory.hpp`):
+      properties keep their value, methods are accepted; the behaviour
+      is still the evaluator's.
 - [ ] The behaviour moves out of the evaluator (`include/wfc/mswinsck/mswinsck.inc`)
       into the library.
-- [ ] A C test creates the control through COM and calls a few members.
+- [x] A C test creates the control through COM and calls a few members
+      (`wfc_check_create` in `tests/dll_check.h`).
 
 ## 0.8: Microsoft ids verified
 

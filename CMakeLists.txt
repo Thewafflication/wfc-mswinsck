@@ -91,7 +91,7 @@ if(WFC_MSWINSCK_SHARED AND WIN32)
     "${CMAKE_CURRENT_BINARY_DIR}/wfcmswinsck.rc"
   )
   target_include_directories(wfc_mswinsck PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
-  target_link_libraries(wfc_mswinsck PRIVATE advapi32)
+  target_link_libraries(wfc_mswinsck PRIVATE advapi32 ole32 oleaut32)
   target_compile_definitions(
     wfc_mswinsck
     PUBLIC WFC_MSWINSCK_SHARED

@@ -4,10 +4,12 @@
 //
 // The class table lists the controls of the library: WFC's own ProgIDs and
 // class ids, and the Microsoft ones used when WFC_REGISTER_MICROSOFT_IDS=1.
-// The library does not create the controls itself yet (DllGetClassObject
-// reports that the class is not available); the registration records which
-// library and which version serves them.
+// DllGetClassObject gives the class factory of a class
+// (wfc/ocx/class_factory.hpp): its objects are late-bound controls built from
+// the member table, without the WFC evaluator.
 
+#include <wfc/mswinsck/mswinsck.hpp>
+#include <wfc/ocx/class_factory.hpp>
 #include <wfc/ocx/registration.hpp>
 #include "registration_info.hpp"
 
@@ -47,14 +49,14 @@ HRESULT __stdcall DllUnregisterServer() {
 }
 
 HRESULT __stdcall DllCanUnloadNow() {
-    return S_OK;
+    return wfc::com::can_unload();
 }
 
-HRESULT __stdcall DllGetClassObject(REFCLSID, REFIID, void** object) {
-    if (object != nullptr) {
-        *object = nullptr;
-    }
-    return CLASS_E_CLASSNOTAVAILABLE;
+HRESULT __stdcall DllGetClassObject(REFCLSID clsid, REFIID iid, void** object) {
+    const auto tables = wfc::ui::mswinsck_classes();
+    return wfc::com::get_class_object(clsid, iid, object, kClasses,
+                                      std::size(kClasses), tables.data(),
+                                      tables.size());
 }
 
 }  // extern "C"

@@ -86,7 +86,7 @@ DLL's version resource (`FileVersion`, `Comments`).
 
 `regsvr32 wfcmswinsck.dll` (`/u` to remove) writes `Software\WFC\Libraries\mswinsck`
 (version, target, path) and, for every control, a class under WFC's own ProgID and class id (`WFC.<Library>.<Class>`) with the DLL as in-process server. `WFC_REGISTER_SCOPE=user|machine` picks the registry
-(default: the machine, the user when that is not writable). With `WFC_REGISTER_MICROSOFT_IDS=1` the controls are also served under the Microsoft ProgIDs and class ids; what was registered there before is saved and restored by `regsvr32 /u`. The library does not create the controls itself yet: `DllGetClassObject` reports that the class is not available; the evaluator of WFC implements the controls.
+(default: the machine, the user when that is not writable). With `WFC_REGISTER_MICROSOFT_IDS=1` the controls are also served under the Microsoft ProgIDs and class ids; what was registered there before is saved and restored by `regsvr32 /u`. `DllGetClassObject` returns a class factory whose objects are late-bound (IDispatch) controls built from the member table: a property keeps the value it is given and a method is accepted, with no WFC evaluator; the behaviour of the controls is still implemented by the evaluator of WFC.
 
 Each library is also a WPM package of its own (`wfc-mswinsck`), whose install script
 copies the DLL to `lib\wfcmswinsck\<version>\<arch>` of the WFC installation and
