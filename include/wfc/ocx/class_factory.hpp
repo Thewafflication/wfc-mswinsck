@@ -95,27 +95,39 @@ inline HRESULT fail(EXCEPINFO* exception, const long error) {
 }  // namespace detail
 
 // The behaviour of one control, made by the library (see the top of the file).
-// `member` is the member's name in lower case. Each function returns S_OK when
+// `member` is the member's name in lower case; `index` holds the arguments of
+// a parameterized property (DayBold(date)), the last one first as COM passes
+// them. Each function returns S_OK when
 // it handled the access, S_FALSE when the control should do what it does for
 // any member, and E_FAIL with `*error` set to a Visual Basic error number
 // (380 for an invalid property value) to refuse it.
 class Behaviour {
 public:
+    struct Index {
+        const VARIANT* arguments = nullptr;
+        UINT count = 0;
+    };
+
     virtual ~Behaviour() = default;
 
     // `events` takes the names of the events to raise once the access is done.
-    virtual HRESULT put(const std::string& member, const VARIANT& value,
-                        long* error, std::vector<std::string>* events) {
+    virtual HRESULT put(const std::string& member, const Index& index,
+                        const VARIANT& value, long* error,
+                        std::vector<std::string>* events) {
         static_cast<void>(member);
+        static_cast<void>(index);
         static_cast<void>(value);
         static_cast<void>(error);
         static_cast<void>(events);
         return S_FALSE;
     }
 
-    virtual HRESULT get(const std::string& member, VARIANT* result) {
+    virtual HRESULT get(const std::string& member, const Index& index,
+                        VARIANT* result, long* error) {
         static_cast<void>(member);
+        static_cast<void>(index);
         static_cast<void>(result);
+        static_cast<void>(error);
         return S_FALSE;
     }
 };
@@ -338,8 +350,10 @@ public:
             if (behaviour_ != nullptr) {
                 long error = 0;
                 std::vector<std::string> events;
+                const Behaviour::Index index{parameters->rgvarg + 1,
+                                             parameters->cArgs - 1};
                 const HRESULT handled = behaviour_->put(
-                    member, parameters->rgvarg[0], &error, &events);
+                    member, index, parameters->rgvarg[0], &error, &events);
                 if (handled == E_FAIL) {
                     return detail::fail(exception, error);
                 }
@@ -358,9 +372,19 @@ public:
         if ((flags & DISPATCH_PROPERTYGET) != 0 && getter) {
             if (result != nullptr) {
                 VariantInit(result);
-                if (behaviour_ != nullptr &&
-                    behaviour_->get(member, result) == S_OK) {
-                    return S_OK;
+                if (behaviour_ != nullptr) {
+                    long error = 0;
+                    const Behaviour::Index index{
+                        parameters != nullptr ? parameters->rgvarg : nullptr,
+                        parameters != nullptr ? parameters->cArgs : 0};
+                    const HRESULT handled =
+                        behaviour_->get(member, index, result, &error);
+                    if (handled == E_FAIL) {
+                        return detail::fail(exception, error);
+                    }
+                    if (handled == S_OK) {
+                        return S_OK;
+                    }
                 }
                 const auto found = values_.find(id);
                 if (found != values_.end()) {
