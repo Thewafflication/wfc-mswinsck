@@ -11,6 +11,12 @@
 // method is accepted and returns Empty. The behaviour of the control (events,
 // drawing, the work of the methods) is still in the evaluator, and moves into
 // the library later (see ROADMAP.md).
+//
+// A library moves the behaviour of a class by giving get_class_object a
+// BehaviourFactory: the Behaviour it makes for the class sees every property
+// access first and may keep the property itself (an UpDown keeps Min, Max and
+// Value in its model and refuses a Value outside the range). What it does not
+// handle is stored and accepted as above.
 
 #ifndef WFC_CLASS_FACTORY_HPP
 #define WFC_CLASS_FACTORY_HPP
@@ -33,8 +39,10 @@
 #include <cstddef>
 #include <cstring>
 #include <map>
+#include <memory>
 #include <new>
 #include <string>
+#include <utility>
 
 namespace wfc::com {
 
@@ -55,12 +63,65 @@ inline bool same_name(const char* a, const std::string& b) {
     return _stricmp(a, b.c_str()) == 0;
 }
 
+inline std::string lower(const char* text) {
+    std::string result(text);
+    for (char& c : result) {
+        if (c >= 'A' && c <= 'Z') {
+            c = static_cast<char>(c - 'A' + 'a');
+        }
+    }
+    return result;
+}
+
+// A refused access: the error a Visual Basic client sees is `error`.
+inline HRESULT fail(EXCEPINFO* exception, const long error) {
+    if (exception != nullptr) {
+        *exception = EXCEPINFO{};
+        exception->scode = static_cast<SCODE>(
+            0x800A0000UL | static_cast<unsigned long>(error));
+        exception->bstrSource = SysAllocString(L"WFC");
+        exception->bstrDescription = SysAllocString(
+            error == 380 ? L"Invalid property value" : L"Control error");
+    }
+    return DISP_E_EXCEPTION;
+}
+
 }  // namespace detail
+
+// The behaviour of one control, made by the library (see the top of the file).
+// `member` is the member's name in lower case. Each function returns S_OK when
+// it handled the access, S_FALSE when the control should do what it does for
+// any member, and E_FAIL with `*error` set to a Visual Basic error number
+// (380 for an invalid property value) to refuse it.
+class Behaviour {
+public:
+    virtual ~Behaviour() = default;
+
+    virtual HRESULT put(const std::string& member, const VARIANT& value,
+                        long* error) {
+        static_cast<void>(member);
+        static_cast<void>(value);
+        static_cast<void>(error);
+        return S_FALSE;
+    }
+
+    virtual HRESULT get(const std::string& member, VARIANT* result) {
+        static_cast<void>(member);
+        static_cast<void>(result);
+        return S_FALSE;
+    }
+};
+
+// Makes the behaviour of the class called `class_name`; null when the class has
+// none (its objects only store their properties).
+using BehaviourFactory = std::unique_ptr<Behaviour> (*)(const char* class_name);
 
 // A control of one class of the library.
 class Control final : public IDispatch {
 public:
-    explicit Control(const wfc::ui::ControlClass* control) : control_(control) {
+    Control(const wfc::ui::ControlClass* control,
+            std::unique_ptr<Behaviour> behaviour)
+        : control_(control), behaviour_(std::move(behaviour)) {
         ++g_objects;
     }
 
@@ -146,7 +207,8 @@ public:
 
     HRESULT __stdcall Invoke(DISPID id, REFIID, LCID, WORD flags,
                              DISPPARAMS* parameters, VARIANT* result,
-                             EXCEPINFO*, UINT*) override {
+                             EXCEPINFO* exception, UINT*) override {
+        std::string member;
         bool getter = false;
         bool setter = false;
         bool method = false;
@@ -155,6 +217,7 @@ public:
             if (static_cast<DISPID>(row.id) != id) {
                 continue;
             }
+            member = detail::lower(row.name);
             getter = getter || row.kind == 'g';
             setter = setter || row.kind == 'l' || row.kind == 's';
             method = method || row.kind == 'm';
@@ -167,6 +230,17 @@ public:
                 return DISP_E_MEMBERNOTFOUND;
             }
             // The value is the last argument (the first of rgvarg).
+            if (behaviour_ != nullptr) {
+                long error = 0;
+                const HRESULT handled =
+                    behaviour_->put(member, parameters->rgvarg[0], &error);
+                if (handled == E_FAIL) {
+                    return detail::fail(exception, error);
+                }
+                if (handled == S_OK) {
+                    return S_OK;
+                }
+            }
             VARIANT& slot = values_[id];
             VariantClear(&slot);
             VariantInit(&slot);
@@ -175,6 +249,10 @@ public:
         if ((flags & DISPATCH_PROPERTYGET) != 0 && getter) {
             if (result != nullptr) {
                 VariantInit(result);
+                if (behaviour_ != nullptr &&
+                    behaviour_->get(member, result) == S_OK) {
+                    return S_OK;
+                }
                 const auto found = values_.find(id);
                 if (found != values_.end()) {
                     return VariantCopy(result, &found->second);
@@ -194,13 +272,15 @@ public:
 private:
     std::atomic<long> references_{1};
     const wfc::ui::ControlClass* control_;
+    std::unique_ptr<Behaviour> behaviour_;
     std::map<DISPID, VARIANT> values_;
 };
 
 // The class factory of one class.
 class Factory final : public IClassFactory {
 public:
-    explicit Factory(const wfc::ui::ControlClass* control) : control_(control) {
+    Factory(const wfc::ui::ControlClass* control, BehaviourFactory behaviour)
+        : control_(control), behaviour_(behaviour) {
         ++g_objects;
     }
 
@@ -244,7 +324,9 @@ public:
         if (outer != nullptr) {
             return CLASS_E_NOAGGREGATION;
         }
-        Control* control = new (std::nothrow) Control(control_);
+        Control* control = new (std::nothrow)
+            Control(control_, behaviour_ != nullptr ? behaviour_(control_->name)
+                                                    : nullptr);
         if (control == nullptr) {
             return E_OUTOFMEMORY;
         }
@@ -265,6 +347,7 @@ public:
 private:
     std::atomic<long> references_{1};
     const wfc::ui::ControlClass* control_;
+    BehaviourFactory behaviour_;
 };
 
 // DllGetClassObject: the factory of the class whose WFC or Microsoft class id
@@ -274,7 +357,8 @@ inline HRESULT get_class_object(REFCLSID clsid, REFIID iid, void** object,
                                 const wfc::registration::ComClass* classes,
                                 std::size_t class_count,
                                 const wfc::ui::ControlClass* tables,
-                                std::size_t table_count) {
+                                std::size_t table_count,
+                                BehaviourFactory behaviour = nullptr) {
     if (object == nullptr) {
         return E_POINTER;
     }
@@ -297,7 +381,8 @@ inline HRESULT get_class_object(REFCLSID clsid, REFIID iid, void** object,
             if (!detail::same_name(tables[t].name, name)) {
                 continue;
             }
-            Factory* factory = new (std::nothrow) Factory(&tables[t]);
+            Factory* factory =
+                new (std::nothrow) Factory(&tables[t], behaviour);
             if (factory == nullptr) {
                 return E_OUTOFMEMORY;
             }
