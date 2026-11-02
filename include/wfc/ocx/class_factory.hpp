@@ -17,6 +17,10 @@
 // access first and may keep the property itself (an UpDown keeps Min, Max and
 // Value in its model and refuses a Value outside the range). What it does not
 // handle is stored and accepted as above.
+//
+// A control also offers one connection point for its events: a client that
+// advises a sink gets the events a Behaviour names, by their dispatch ids
+// from the event table of the class.
 
 #ifndef WFC_CLASS_FACTORY_HPP
 #define WFC_CLASS_FACTORY_HPP
@@ -30,6 +34,7 @@
 #include <windows.h>
 
 #include <objbase.h>
+#include <ocidl.h>
 #include <oleauto.h>
 
 #include <wfc/ocx/control_class.hpp>
@@ -43,6 +48,7 @@
 #include <new>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace wfc::com {
 
@@ -97,11 +103,13 @@ class Behaviour {
 public:
     virtual ~Behaviour() = default;
 
+    // `events` takes the names of the events to raise once the access is done.
     virtual HRESULT put(const std::string& member, const VARIANT& value,
-                        long* error) {
+                        long* error, std::vector<std::string>* events) {
         static_cast<void>(member);
         static_cast<void>(value);
         static_cast<void>(error);
+        static_cast<void>(events);
         return S_FALSE;
     }
 
@@ -117,7 +125,9 @@ public:
 using BehaviourFactory = std::unique_ptr<Behaviour> (*)(const char* class_name);
 
 // A control of one class of the library.
-class Control final : public IDispatch {
+class Control final : public IDispatch,
+                      public IConnectionPointContainer,
+                      public IConnectionPoint {
 public:
     Control(const wfc::ui::ControlClass* control,
             std::unique_ptr<Behaviour> behaviour)
@@ -132,6 +142,9 @@ public:
         for (auto& entry : values_) {
             VariantClear(&entry.second);
         }
+        for (auto& sink : sinks_) {
+            sink.second->Release();
+        }
         --g_objects;
     }
 
@@ -141,6 +154,16 @@ public:
         }
         if (IsEqualIID(iid, IID_IUnknown) || IsEqualIID(iid, IID_IDispatch)) {
             *object = static_cast<IDispatch*>(this);
+            AddRef();
+            return S_OK;
+        }
+        if (IsEqualIID(iid, IID_IConnectionPointContainer)) {
+            *object = static_cast<IConnectionPointContainer*>(this);
+            AddRef();
+            return S_OK;
+        }
+        if (IsEqualIID(iid, IID_IConnectionPoint)) {
+            *object = static_cast<IConnectionPoint*>(this);
             AddRef();
             return S_OK;
         }
@@ -158,6 +181,69 @@ public:
             delete this;
         }
         return static_cast<ULONG>(left);
+    }
+
+    // IConnectionPointContainer: one connection point, for the events of the
+    // class, whatever source interface the client asks for.
+    HRESULT __stdcall EnumConnectionPoints(IEnumConnectionPoints**) override {
+        return E_NOTIMPL;
+    }
+
+    HRESULT __stdcall FindConnectionPoint(REFIID,
+                                          IConnectionPoint** point) override {
+        if (point == nullptr) {
+            return E_POINTER;
+        }
+        *point = static_cast<IConnectionPoint*>(this);
+        AddRef();
+        return S_OK;
+    }
+
+    // IConnectionPoint.
+    HRESULT __stdcall GetConnectionInterface(IID* iid) override {
+        if (iid == nullptr) {
+            return E_POINTER;
+        }
+        *iid = IID_IDispatch;
+        return S_OK;
+    }
+
+    HRESULT __stdcall GetConnectionPointContainer(
+        IConnectionPointContainer** container) override {
+        if (container == nullptr) {
+            return E_POINTER;
+        }
+        *container = static_cast<IConnectionPointContainer*>(this);
+        AddRef();
+        return S_OK;
+    }
+
+    HRESULT __stdcall Advise(IUnknown* sink, DWORD* cookie) override {
+        if (sink == nullptr || cookie == nullptr) {
+            return E_POINTER;
+        }
+        IDispatch* dispatch = nullptr;
+        if (sink->QueryInterface(IID_IDispatch,
+                                 reinterpret_cast<void**>(&dispatch)) != S_OK) {
+            return CONNECT_E_CANNOTCONNECT;
+        }
+        *cookie = ++last_cookie_;
+        sinks_[*cookie] = dispatch;
+        return S_OK;
+    }
+
+    HRESULT __stdcall Unadvise(DWORD cookie) override {
+        const auto found = sinks_.find(cookie);
+        if (found == sinks_.end()) {
+            return CONNECT_E_NOCONNECTION;
+        }
+        found->second->Release();
+        sinks_.erase(found);
+        return S_OK;
+    }
+
+    HRESULT __stdcall EnumConnections(IEnumConnections**) override {
+        return E_NOTIMPL;
     }
 
     HRESULT __stdcall GetTypeInfoCount(UINT* count) override {
@@ -205,6 +291,25 @@ public:
         return result;
     }
 
+    // Raises the event called `name` on every sink (any letter case); it has
+    // no arguments here.
+    void raise(const std::string& name) {
+        for (std::size_t e = 0; e < control_->event_count; ++e) {
+            if (!detail::same_name(control_->events[e].name, name)) {
+                continue;
+            }
+            const DISPID id = static_cast<DISPID>(control_->events[e].id);
+            DISPPARAMS none = {nullptr, nullptr, 0, 0};
+            // A sink may unadvise while it is called: walk a copy.
+            const auto copy = sinks_;
+            for (const auto& sink : copy) {
+                sink.second->Invoke(id, IID_NULL, 0, DISPATCH_METHOD, &none,
+                                    nullptr, nullptr, nullptr);
+            }
+            return;
+        }
+    }
+
     HRESULT __stdcall Invoke(DISPID id, REFIID, LCID, WORD flags,
                              DISPPARAMS* parameters, VARIANT* result,
                              EXCEPINFO* exception, UINT*) override {
@@ -232,12 +337,16 @@ public:
             // The value is the last argument (the first of rgvarg).
             if (behaviour_ != nullptr) {
                 long error = 0;
-                const HRESULT handled =
-                    behaviour_->put(member, parameters->rgvarg[0], &error);
+                std::vector<std::string> events;
+                const HRESULT handled = behaviour_->put(
+                    member, parameters->rgvarg[0], &error, &events);
                 if (handled == E_FAIL) {
                     return detail::fail(exception, error);
                 }
                 if (handled == S_OK) {
+                    for (const std::string& name : events) {
+                        raise(name);
+                    }
                     return S_OK;
                 }
             }
@@ -274,6 +383,8 @@ private:
     const wfc::ui::ControlClass* control_;
     std::unique_ptr<Behaviour> behaviour_;
     std::map<DISPID, VARIANT> values_;
+    std::map<DWORD, IDispatch*> sinks_;
+    DWORD last_cookie_ = 0;
 };
 
 // The class factory of one class.
