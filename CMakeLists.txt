@@ -169,6 +169,28 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
     PROPERTIES LABELS "unit;mp-0010;mswinsck" TIMEOUT 120
   )
 
+  add_executable(mswinsck_states_test tests/states_test.cpp)
+  target_link_libraries(mswinsck_states_test PRIVATE wfc_mswinsck)
+  if(WFC_MSWINSCK_SHARED)
+    # Next to the DLL, so the program finds it.
+    set_target_properties(
+      mswinsck_states_test
+      PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
+    )
+  endif()
+  target_compile_features(mswinsck_states_test PRIVATE cxx_std_20)
+  if(COMMAND wfc_enable_strict_warnings)
+    wfc_enable_strict_warnings(mswinsck_states_test)
+  endif()
+  if(COMMAND wsp_enable_hardening)
+    wsp_enable_hardening(mswinsck_states_test)
+  endif()
+  add_test(NAME TC-MP0010-mswinsck-states COMMAND mswinsck_states_test)
+  set_tests_properties(
+    TC-MP0010-mswinsck-states
+    PROPERTIES LABELS "unit;mp-0010;mswinsck" TIMEOUT 120
+  )
+
   if(WIN32)
     add_executable(winsock_io_tests tests/winsock_io_tests.cpp)
     target_link_libraries(winsock_io_tests PRIVATE wfc_mswinsck_io)

@@ -51,7 +51,8 @@ void set_state(Interpreter& in, ControlObject& control, const Integer state) {
     // for as long as one is open.
     auto& runtime = FormSupport::runtime(in);
     if (runtime.headless == nullptr) {
-        const bool awake = state != kClosed && state != kSocketError;
+        const bool awake = wfc::mswinsck::keeps_host_awake(
+            static_cast<wfc::mswinsck::SocketState>(state));
         if (awake && !runtime.sockets_awake) {
             runtime.host->wake_timer(0, 25);
             runtime.sockets_awake = true;
@@ -98,6 +99,16 @@ void reset_socket(Interpreter& in, ControlObject& control, const Integer state) 
 
 [[nodiscard]] long socket_status(ControlObject& control) {
     return property_whole(control, "state");
+}
+
+[[nodiscard]] wfc::mswinsck::SocketState current_state(ControlObject& control) {
+    return static_cast<wfc::mswinsck::SocketState>(socket_status(control));
+}
+
+// A refusal of the state rules (states.hpp) as the control reports it.
+[[nodiscard]] NativeFailure refusal(const wfc::mswinsck::Result result) {
+    return NativeFailure{static_cast<Integer>(wfc::mswinsck::error_number(result)),
+                         wfc::mswinsck::error_message(result)};
 }
 
 // The bytes of a value as Winsock sends them.
@@ -330,15 +341,10 @@ bool winsock_get(Interpreter& in, ControlObject& self, const std::string& member
         return true;
     }
     if (member == "listen") {
-        if (socket_status(self) != kClosed && socket_status(self) != kOpen) {
-            failure = NativeFailure{kInvalidOperation,
-                                    "Invalid operation at current state"};
-            return true;
-        }
-        if (is_udp(self)) {
-            failure = NativeFailure{kInvalidState,
-                                    "Wrong protocol or connection state for "
-                                    "the requested transaction or request"};
+        if (const auto refused = wfc::mswinsck::check_listen(
+                current_state(self), is_udp(self));
+            refused != wfc::mswinsck::Result::ok) {
+            failure = refusal(refused);
             return true;
         }
         if (socket.socket == net::kInvalid &&
@@ -356,9 +362,10 @@ bool winsock_get(Interpreter& in, ControlObject& self, const std::string& member
         return true;
     }
     if (member == "bind") {
-        if (socket_status(self) != kClosed) {
-            failure = NativeFailure{kInvalidOperation,
-                                    "Invalid operation at current state"};
+        if (const auto refused = wfc::mswinsck::check_closed(
+                    current_state(self));
+                refused != wfc::mswinsck::Result::ok) {
+            failure = refusal(refused);
             return true;
         }
         const long port = optional(0) != nullptr
@@ -373,9 +380,10 @@ bool winsock_get(Interpreter& in, ControlObject& self, const std::string& member
         return true;
     }
     if (member == "connect") {
-        if (socket_status(self) != kClosed) {
-            failure = NativeFailure{kInvalidOperation,
-                                    "Invalid operation at current state"};
+        if (const auto refused = wfc::mswinsck::check_closed(
+                    current_state(self));
+                refused != wfc::mswinsck::Result::ok) {
+            failure = refusal(refused);
             return true;
         }
         if (optional(0) != nullptr) {
@@ -411,9 +419,10 @@ bool winsock_get(Interpreter& in, ControlObject& self, const std::string& member
         return true;
     }
     if (member == "accept") {
-        if (socket_status(self) != kClosed) {
-            failure = NativeFailure{kInvalidOperation,
-                                    "Invalid operation at current state"};
+        if (const auto refused = wfc::mswinsck::check_closed(
+                    current_state(self));
+                refused != wfc::mswinsck::Result::ok) {
+            failure = refusal(refused);
             return true;
         }
         const long request = optional(0) != nullptr
@@ -436,8 +445,7 @@ bool winsock_get(Interpreter& in, ControlObject& self, const std::string& member
             });
         }
         if (taken == net::kInvalid) {
-            failure = NativeFailure{kInvalidOperation,
-                                    "Invalid operation at current state"};
+            failure = refusal(wfc::mswinsck::Result::invalid_operation);
             return true;
         }
         socket.socket = taken;
@@ -479,11 +487,10 @@ bool winsock_get(Interpreter& in, ControlObject& self, const std::string& member
                 return true;
             }
         } else {
-            if (socket_status(self) != kConnected) {
-                failure = NativeFailure{kInvalidState,
-                                        "Wrong protocol or connection state "
-                                        "for the requested transaction or "
-                                        "request"};
+            if (const auto refused = wfc::mswinsck::check_send(
+                    current_state(self), false);
+                refused != wfc::mswinsck::Result::ok) {
+                failure = refusal(refused);
                 return true;
             }
             if (!net::send(socket.socket, bytes, error)) {
@@ -532,10 +539,13 @@ bool winsock_get(Interpreter& in, ControlObject& self, const std::string& member
 
 bool winsock_put(Interpreter& in, ControlObject& self, const std::string& member,
                  const Value& value, NativeFailure& failure) {
-    if (member == "protocol" && socket_status(self) != kClosed) {
-        failure = NativeFailure{kInvalidOperation,
-                                "Invalid operation at current state"};
-        return true;
+    if (member == "protocol") {
+        if (const auto refused =
+                wfc::mswinsck::check_closed(current_state(self));
+            refused != wfc::mswinsck::Result::ok) {
+            failure = refusal(refused);
+            return true;
+        }
     }
     static_cast<void>(in);
     static_cast<void>(value);

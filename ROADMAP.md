@@ -37,8 +37,12 @@ item is present, tested and passing in CI; an unchecked one is planned.
       without the WFC evaluator (`include/wfc/ocx/class_factory.hpp`):
       properties keep their value, methods are accepted; the behaviour
       is still the evaluator's.
-- [ ] The behaviour moves out of the evaluator (`include/wfc/mswinsck/mswinsck.inc`)
-      into the library.
+- [x] The rules that need no window or socket moved into the library
+      (`include/wfc/mswinsck/states.hpp`): which methods each State allows (Listen, Bind, Connect, Accept, SendData,
+      Protocol) and the errors 40006 and 40020.
+- [ ] The rest of the behaviour moves out of the evaluator
+      (`include/wfc/mswinsck/mswinsck.inc`): the sockets, the events and
+      the data (GetData, PeekData) and the COM objects' methods.
 - [x] A C test creates the control through COM and calls a few members
       (`wfc_check_create` in `tests/dll_check.h`).
 
