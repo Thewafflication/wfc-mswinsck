@@ -20,8 +20,15 @@
 //
 // A Behaviour that raises events outside a property access (a collection item
 // that is selected by the program) is given the control's event raiser by
-// attach(): the function raises the event called `name` on every sink and
-// returns true when a cancellable event (BeforeClick(Cancel)) was cancelled.
+// attach(): the function raises the event called `name` on every sink with
+// the arguments the Behaviour gives, in the order of the call (a By Ref
+// argument, such as Cancel, is a VT_BYREF Variant the sink can change).
+//
+// The input of the user (a click, a key, the end of a label edit) reaches a
+// Behaviour through the member WfcInput(Action, Argument), which every
+// control that has a Behaviour answers: a window host forwards what the
+// user did, in the words of the WFC input scripts (`click`, `select`, `key`,
+// `edit`), and the Behaviour changes its state and raises the events.
 
 // A control also offers one connection point for its events: a client that
 // advises a sink gets the events a Behaviour names, by their dispatch ids
@@ -118,9 +125,19 @@ public:
 
     // Called once, when the control is made, with the control's event raiser
     // (see the top of the file). The raiser lives as long as the behaviour.
-    virtual void attach(
-        std::function<bool(const std::string& name, bool cancellable)> raiser) {
+    virtual void attach(std::function<void(const std::string& name,
+                                           std::vector<VARIANT>& arguments)>
+                            raiser) {
         static_cast<void>(raiser);
+    }
+
+    // The input of the user (see the top of the file); S_FALSE when the
+    // action means nothing to this control.
+    virtual HRESULT input(const std::string& action,
+                          const std::string& argument) {
+        static_cast<void>(action);
+        static_cast<void>(argument);
+        return S_FALSE;
     }
 
     // `events` takes the names of the events to raise once the access is done.
@@ -159,10 +176,10 @@ public:
         : control_(control), behaviour_(std::move(behaviour)) {
         ++g_objects;
         if (behaviour_ != nullptr) {
-            behaviour_->attach(
-                [this](const std::string& name, const bool cancellable) {
-                    return raise(name, cancellable);
-                });
+            behaviour_->attach([this](const std::string& name,
+                                      std::vector<VARIANT>& arguments) {
+                raise_with(name, arguments);
+            });
         }
     }
 
@@ -305,6 +322,11 @@ public:
             // Only the first name is a member; the rest are parameters.
             const std::string wanted = detail::narrow(names[i]);
             const wfc::ui::MemberRow* found = nullptr;
+            if (i == 0 && behaviour_ != nullptr &&
+                detail::same_name("WfcInput", wanted)) {
+                ids[i] = kInputId;
+                continue;
+            }
             if (i == 0) {
                 for (std::size_t m = 0; m < control_->member_count; ++m) {
                     if (detail::same_name(control_->members[m].name, wanted)) {
@@ -320,6 +342,27 @@ public:
             }
         }
         return result;
+    }
+
+    // Raises the event called `name` with `arguments` (in the order of the
+    // call; COM wants them last first).
+    void raise_with(const std::string& name, std::vector<VARIANT>& arguments) {
+        for (std::size_t e = 0; e < control_->event_count; ++e) {
+            if (!detail::same_name(control_->events[e].name, name)) {
+                continue;
+            }
+            const DISPID id = static_cast<DISPID>(control_->events[e].id);
+            std::vector<VARIANT> reversed(arguments.rbegin(), arguments.rend());
+            DISPPARAMS parameters = {
+                reversed.empty() ? nullptr : reversed.data(), nullptr,
+                static_cast<UINT>(reversed.size()), 0};
+            const auto copy = sinks_;
+            for (const auto& sink : copy) {
+                sink.second->Invoke(id, IID_NULL, 0, DISPATCH_METHOD,
+                                    &parameters, nullptr, nullptr, nullptr);
+            }
+            return;
+        }
     }
 
     // Raises the event called `name` on every sink (any letter case). A
@@ -352,6 +395,32 @@ public:
     HRESULT __stdcall Invoke(DISPID id, REFIID, LCID, WORD flags,
                              DISPPARAMS* parameters, VARIANT* result,
                              EXCEPINFO* exception, UINT*) override {
+        if (id == kInputId && behaviour_ != nullptr) {
+            // WfcInput(Action, Argument): the arguments come last first.
+            if (parameters == nullptr || parameters->cArgs < 1 ||
+                parameters->cArgs > 2) {
+                return DISP_E_BADPARAMCOUNT;
+            }
+            const auto text = [&](const UINT position) {
+                VARIANT plain;
+                VariantInit(&plain);
+                std::string out;
+                if (VariantChangeType(&plain, &parameters->rgvarg[position], 0,
+                                      VT_BSTR) == S_OK) {
+                    out = detail::narrow(plain.bstrVal);
+                }
+                VariantClear(&plain);
+                return out;
+            };
+            const std::string action = text(parameters->cArgs - 1U);
+            const std::string argument =
+                parameters->cArgs == 2U ? text(0) : std::string{};
+            if (result != nullptr) {
+                VariantInit(result);
+            }
+            behaviour_->input(action, argument);
+            return S_OK;
+        }
         std::string member;
         bool getter = false;
         bool setter = false;
@@ -430,6 +499,9 @@ public:
     }
 
 private:
+    // The dispatch id of WfcInput (outside the ids of the member tables).
+    static constexpr DISPID kInputId = 0x7F000001;
+
     std::atomic<long> references_{1};
     const wfc::ui::ControlClass* control_;
     std::unique_ptr<Behaviour> behaviour_;
