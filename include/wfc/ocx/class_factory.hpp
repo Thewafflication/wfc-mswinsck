@@ -18,6 +18,11 @@
 // Value in its model and refuses a Value outside the range). What it does not
 // handle is stored and accepted as above.
 //
+// A Behaviour that raises events outside a property access (a collection item
+// that is selected by the program) is given the control's event raiser by
+// attach(): the function raises the event called `name` on every sink and
+// returns true when a cancellable event (BeforeClick(Cancel)) was cancelled.
+
 // A control also offers one connection point for its events: a client that
 // advises a sink gets the events a Behaviour names, by their dispatch ids
 // from the event table of the class.
@@ -43,6 +48,7 @@
 #include <atomic>
 #include <cstddef>
 #include <cstring>
+#include <functional>
 #include <map>
 #include <memory>
 #include <new>
@@ -110,6 +116,13 @@ public:
 
     virtual ~Behaviour() = default;
 
+    // Called once, when the control is made, with the control's event raiser
+    // (see the top of the file). The raiser lives as long as the behaviour.
+    virtual void attach(
+        std::function<bool(const std::string& name, bool cancellable)> raiser) {
+        static_cast<void>(raiser);
+    }
+
     // `events` takes the names of the events to raise once the access is done.
     virtual HRESULT put(const std::string& member, const Index& index,
                         const VARIANT& value, long* error,
@@ -145,6 +158,12 @@ public:
             std::unique_ptr<Behaviour> behaviour)
         : control_(control), behaviour_(std::move(behaviour)) {
         ++g_objects;
+        if (behaviour_ != nullptr) {
+            behaviour_->attach(
+                [this](const std::string& name, const bool cancellable) {
+                    return raise(name, cancellable);
+                });
+        }
     }
 
     Control(const Control&) = delete;
@@ -303,23 +322,31 @@ public:
         return result;
     }
 
-    // Raises the event called `name` on every sink (any letter case); it has
-    // no arguments here.
-    void raise(const std::string& name) {
+    // Raises the event called `name` on every sink (any letter case). A
+    // cancellable event has one By Ref Integer argument (Cancel); the result
+    // says whether a sink set it.
+    bool raise(const std::string& name, const bool cancellable = false) {
         for (std::size_t e = 0; e < control_->event_count; ++e) {
             if (!detail::same_name(control_->events[e].name, name)) {
                 continue;
             }
             const DISPID id = static_cast<DISPID>(control_->events[e].id);
-            DISPPARAMS none = {nullptr, nullptr, 0, 0};
+            SHORT cancel = 0;
+            VARIANT argument;
+            VariantInit(&argument);
+            argument.vt = VT_I2 | VT_BYREF;
+            argument.piVal = &cancel;
+            DISPPARAMS parameters = {cancellable ? &argument : nullptr, nullptr,
+                                     cancellable ? 1U : 0U, 0};
             // A sink may unadvise while it is called: walk a copy.
             const auto copy = sinks_;
             for (const auto& sink : copy) {
-                sink.second->Invoke(id, IID_NULL, 0, DISPATCH_METHOD, &none,
-                                    nullptr, nullptr, nullptr);
+                sink.second->Invoke(id, IID_NULL, 0, DISPATCH_METHOD,
+                                    &parameters, nullptr, nullptr, nullptr);
             }
-            return;
+            return cancel != 0;
         }
+        return false;
     }
 
     HRESULT __stdcall Invoke(DISPID id, REFIID, LCID, WORD flags,
