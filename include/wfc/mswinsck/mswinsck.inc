@@ -46,7 +46,7 @@ std::vector<std::weak_ptr<InstanceData>>& live_sockets() {
 }
 
 void set_state(Interpreter& in, ControlObject& control, const Integer state) {
-    control.values["state"] = Value{state};
+    control.values["state"] = Value{static_cast<Int16>(state)};  // an Integer
     // A real host sleeps in its message loop: a wake-up timer polls sockets
     // for as long as one is open.
     auto& runtime = FormSupport::runtime(in);
