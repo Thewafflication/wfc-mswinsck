@@ -1,0 +1,27 @@
+name: Release
+
+# A version tag (the version in VERSION) builds, tests, packs, signs and
+# verifies wfc-mswinsck-any-<version>.zip with the release workflow every WFC
+# library shares (Thewafflication/wfc, .github/workflows/library-release.yml).
+# A manual run with dry_run builds an unsigned package to try it.
+
+on:
+  push:
+    tags: ["*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build an unsigned package without the release key
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    uses: Thewafflication/wfc/.github/workflows/library-release.yml@master
+    with:
+      library: mswinsck
+      dry_run: ${{ inputs.dry_run == true }}
+    secrets: inherit
