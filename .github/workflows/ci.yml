@@ -31,7 +31,9 @@ jobs:
       - name: Configure
         shell: pwsh
         run: |
-          $extra = if ('${{ matrix.shared }}' -eq 'true') { '-DWFC_MSWINSCK_SHARED=ON' } else { '-DWFC_MSWINSCK_SHARED=OFF' }
+          $shared = 'OFF'
+          if ('${{ matrix.shared }}' -eq 'true') { $shared = 'ON' }
+          $extra = "-DWFC_MSWINSCK_SHARED=$shared"
           cmake -S . -B out/build -A ${{ matrix.platform }} $extra
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
@@ -67,9 +69,11 @@ jobs:
           fi
           sudo apt-get update
           if [ "${{ matrix.arch }}" = "x86" ]; then
-            sudo apt-get install -y wine64-tools libwine-dev:i386 gcc-multilib g++-multilib cmake ninja-build
+            sudo apt-get install -y wine64-tools libwine-dev:i386 \
+              gcc-multilib g++-multilib cmake ninja-build
           else
-            sudo apt-get install -y wine64-tools libwine-dev wine64 cmake ninja-build
+            sudo apt-get install -y wine64-tools libwine-dev wine64 \
+              cmake ninja-build
           fi
 
       - name: Configure
@@ -90,7 +94,8 @@ jobs:
         if: matrix.arch != 'arm64'
         run: |
           set -o pipefail
-          ctest --test-dir out/winelib --output-on-failure 2>&1 | tee out/test.txt
+          ctest --test-dir out/winelib --output-on-failure 2>&1 |
+            tee out/test.txt
 
       - name: Screenshot of the session
         if: always()
@@ -107,7 +112,9 @@ jobs:
               echo '(the tests are not run on arm64: Wine hangs there)'
             fi
           } > out/session.txt
-          python3 scripts/render_terminal.py out/session.txt docs/images/linux-winelib-${{ matrix.arch }}.png "wfc-mswinsck: Linux (Winelib) ${{ matrix.arch }}"
+          python3 scripts/render_terminal.py out/session.txt \
+            docs/images/linux-winelib-${{ matrix.arch }}.png \
+            "wfc-mswinsck: Linux (Winelib) ${{ matrix.arch }}"
 
       - uses: actions/upload-artifact@v4
         if: always()

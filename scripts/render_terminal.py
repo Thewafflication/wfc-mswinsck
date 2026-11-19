@@ -44,7 +44,8 @@ def main():
     image = Image.new("RGB", (width, height), (30, 30, 36))
     draw = ImageDraw.Draw(image)
     draw.rectangle((0, 0, width, bar), fill=(54, 54, 64))
-    for index, colour in enumerate(((237, 106, 94), (245, 191, 79), (97, 197, 84))):
+    lights = ((237, 106, 94), (245, 191, 79), (97, 197, 84))
+    for index, colour in enumerate(lights):
         draw.ellipse((14 + index * 22, 9, 28 + index * 22, 23), fill=colour)
     draw.text((width // 2 - len(title) * 4, 8), title, font=font,
               fill=(210, 210, 220))

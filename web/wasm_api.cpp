@@ -49,7 +49,8 @@ EMSCRIPTEN_KEEPALIVE int event_count(const int index) {
     return entry != nullptr ? static_cast<int>(entry->event_count) : 0;
 }
 
-EMSCRIPTEN_KEEPALIVE const char* member_name(const int index, const int member) {
+EMSCRIPTEN_KEEPALIVE const char* member_name(const int index,
+                                             const int member) {
     const auto* entry = find(index);
     return entry != nullptr && member >= 0 &&
                    static_cast<std::size_t>(member) < entry->member_count
