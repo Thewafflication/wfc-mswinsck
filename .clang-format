@@ -1,5 +1,5 @@
 # @file .clang-format
-# @brief Controlled C++ formatting for wfc-mswinsck-owned sources (WSP-LANG-0002).
+# @brief Controlled C++ formatting for library-owned sources (WSP-LANG-0002).
 # @note Pinned tool: clang-format 22.1.3 (Visual Studio 2026 LLVM).
 #   Formatting does not enforce every 80-column case; Test-SourceStyle.ps1
 #   remains the authoritative physical-line check (WSP-STYLE-0001).

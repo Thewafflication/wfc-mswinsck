@@ -1,0 +1,33 @@
+# @file .pre-commit-config.yaml
+# @brief Library commit gate: lint, then x64 debug build and tests
+#        (WSP-CHECK-0001).
+# @note Setup: python -m pip install --requirement requirements-dev.txt, then
+#       pre-commit install.
+minimum_pre_commit_version: "4.6.2"
+default_install_hook_types: [pre-commit]
+default_stages: [pre-commit]
+fail_fast: true
+repos:
+  - repo: local
+    hooks:
+      - id: lib-lint
+        name: Library lint
+        entry: pwsh -NoProfile -File scripts/Invoke-Lint.ps1
+        language: system
+        always_run: true
+        pass_filenames: false
+        require_serial: true
+      - id: lib-build
+        name: Library build (x64 Debug)
+        entry: pwsh -NoProfile -File scripts/Invoke-Build.ps1
+        language: system
+        always_run: true
+        pass_filenames: false
+        require_serial: true
+      - id: lib-tests
+        name: Library tests (x64 Debug)
+        entry: pwsh -NoProfile -File scripts/Invoke-Tests.ps1
+        language: system
+        always_run: true
+        pass_filenames: false
+        require_serial: true
