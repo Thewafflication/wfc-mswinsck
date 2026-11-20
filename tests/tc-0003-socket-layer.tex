@@ -34,7 +34,7 @@ seconds.}
 \def\TCInitialState{No socket is open.}
 
 \def\TCProcedure{\begin{enumerate}
-  \item Run \texttt{winsock\_io\_tests} (CTest \texttt{TC-0003-io}).
+  \item Run \texttt{winsock\_io\_tests} (CTest \texttt{TC-0003-io}, in WFC \texttt{wfc-mswinsck-TC-0003-io}).
   \item TCP: open a server socket, bind it to port 0 and listen; the port it
     got is positive. Open a client, connect to it and wait until the
     connection completes. Accept the connection, check that the peer address

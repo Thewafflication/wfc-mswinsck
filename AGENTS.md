@@ -44,8 +44,9 @@ submodule (see `docs/WSP-ADOPTION.md`).
   and `.editorconfig` are copies of the WFC ones.
 - Never modify `wsp/`; bump it by pinning a newer release tag.
 - Requirements are `REQ-NNNN` under `requirements/`, test cases `TC-NNNN`
-  (specification `tests/tc-NNNN-*.tex`, CTest name `TC-NNNN-<name>`, runner
+  (specification `tests/tc-NNNN-*.tex`, CTest name `TC-NNNN-<name>`, or `wfc-mswinsck-TC-NNNN-<name>` when
+  another project mounts the library (`WFC_MSWINSCK_TEST_PREFIX`), runner
   `tests/run-tc-NNNN.ps1`), both numbered from 0001 in this repository's own
-  namespace (`docs/id-map.md` has the old WFC identifiers); keep identifiers stable and never reuse one (WSP artifact
-  identifiers).
+  namespace (`docs/id-map.md` has the old WFC identifiers); keep identifiers
+  stable and never reuse one (WSP artifact identifiers).
 - `VERSION` is the library version; a release tag is the owner's decision.

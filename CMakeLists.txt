@@ -7,8 +7,8 @@
 # stamped into the DLL's version resource.
 #
 # Parent project variables used when present: WFC_OCX_SHARED (the default of
-# WFC_MSWINSCK_SHARED) and the functions wfc_enable_strict_warnings and
-# wsp_enable_hardening.
+# WFC_MSWINSCK_SHARED), WFC_MSWINSCK_TEST_PREFIX (see below) and the functions
+# wfc_enable_strict_warnings and wsp_enable_hardening.
 
 # Standalone build: the library outside WFC. WFC itself adds this directory
 # with add_subdirectory and supplies the project, CTest and the WSP hardening.
@@ -32,6 +32,22 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     AND NOT WFC_WINELIB
   )
     include("${CMAKE_CURRENT_SOURCE_DIR}/wsp/tools/cmake/WspBuild.cmake")
+  endif()
+endif()
+
+# CTest names. Inside this repository the tests are named TC-NNNN-<name>. When
+# another project mounts the library (add_subdirectory), every name carries the
+# library name, wfc-mswinsck-TC-NNNN-<name>, so that the names of different
+# libraries never collide. WFC_MSWINSCK_TEST_PREFIX holds that prefix; the
+# including project may set it before add_subdirectory (an empty value is kept).
+# PROJECT_IS_TOP_LEVEL cannot tell the two cases apart here (it follows the
+# nearest project() call, which belongs to the parent when mounted), so the
+# source directory is compared with the top of the build, as above.
+if(NOT DEFINED WFC_MSWINSCK_TEST_PREFIX)
+  if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+    set(WFC_MSWINSCK_TEST_PREFIX "")
+  else()
+    set(WFC_MSWINSCK_TEST_PREFIX "wfc-mswinsck-")
   endif()
 endif()
 
@@ -163,9 +179,12 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
   if(COMMAND wsp_enable_hardening)
     wsp_enable_hardening(mswinsck_tables_test)
   endif()
-  add_test(NAME TC-0001-tables COMMAND mswinsck_tables_test)
+  add_test(
+    NAME ${WFC_MSWINSCK_TEST_PREFIX}TC-0001-tables
+    COMMAND mswinsck_tables_test
+  )
   set_tests_properties(
-    TC-0001-tables
+    ${WFC_MSWINSCK_TEST_PREFIX}TC-0001-tables
     PROPERTIES LABELS "unit;mswinsck" TIMEOUT 120
   )
 
@@ -185,9 +204,12 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
   if(COMMAND wsp_enable_hardening)
     wsp_enable_hardening(mswinsck_states_test)
   endif()
-  add_test(NAME TC-0002-states COMMAND mswinsck_states_test)
+  add_test(
+    NAME ${WFC_MSWINSCK_TEST_PREFIX}TC-0002-states
+    COMMAND mswinsck_states_test
+  )
   set_tests_properties(
-    TC-0002-states
+    ${WFC_MSWINSCK_TEST_PREFIX}TC-0002-states
     PROPERTIES LABELS "unit;mswinsck" TIMEOUT 120
   )
 
@@ -201,9 +223,12 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
     if(COMMAND wsp_enable_hardening)
       wsp_enable_hardening(winsock_io_tests)
     endif()
-    add_test(NAME TC-0003-io COMMAND winsock_io_tests)
+    add_test(
+      NAME ${WFC_MSWINSCK_TEST_PREFIX}TC-0003-io
+      COMMAND winsock_io_tests
+    )
     set_tests_properties(
-      TC-0003-io
+      ${WFC_MSWINSCK_TEST_PREFIX}TC-0003-io
       PROPERTIES LABELS "integration;mswinsck" TIMEOUT 60
     )
   endif()
@@ -222,13 +247,13 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
       wsp_enable_hardening(mswinsck_dll_test)
     endif()
     add_test(
-      NAME TC-0004-dll
+      NAME ${WFC_MSWINSCK_TEST_PREFIX}TC-0004-dll
       COMMAND
         mswinsck_dll_test "$<TARGET_FILE:wfc_mswinsck>"
         "${WFC_MSWINSCK_VERSION}" "${WFC_LIB_TARGET}"
     )
     set_tests_properties(
-      TC-0004-dll
+      ${WFC_MSWINSCK_TEST_PREFIX}TC-0004-dll
       PROPERTIES
         LABELS "integration;mswinsck"
         RESOURCE_LOCK registry
@@ -253,7 +278,7 @@ if(
   )
   set(corpus_case "${CMAKE_CURRENT_SOURCE_DIR}/tests/corpus")
   add_test(
-    NAME TC-0005-winsock-corpus
+    NAME ${WFC_MSWINSCK_TEST_PREFIX}TC-0005-winsock-corpus
     COMMAND
       "${CMAKE_COMMAND}" "-DWFC=${WFC_EXECUTABLE}"
       "-DINPUT=${corpus_case}/196-ocx-winsock-dialog.vbp"
@@ -262,7 +287,7 @@ if(
       "${corpus_case}/run_corpus_case.cmake"
   )
   set_tests_properties(
-    TC-0005-winsock-corpus
+    ${WFC_MSWINSCK_TEST_PREFIX}TC-0005-winsock-corpus
     PROPERTIES
       LABELS "integration;mswinsck;corpus"
       TIMEOUT 120

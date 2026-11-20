@@ -20,7 +20,7 @@ never reused.
 
 ## Test cases
 
-| Old identifier | Old title | New identifier | CTest name | Specification |
+| Old identifier | Old title | New identifier | CTest name (in WFC: `wfc-mswinsck-` before it) | Specification |
 | --- | --- | --- | --- | --- |
 | `TC-MP0010-mswinsck-tables` | Member table of the Winsock library | `TC-0001` | `TC-0001-tables` | `tests/tc-0001-member-table.tex` |
 | `TC-MP0010-mswinsck-states` | State rules of the Winsock control | `TC-0002` | `TC-0002-states` | `tests/tc-0002-state-rules.tex` |
@@ -39,4 +39,7 @@ globs `lib/*/tests/corpus/*.expected`), and still names `REQ-0305` and the
 `TC-MP0010-mswinsck-*` tests in its planning records (milestone closeouts and
 work logs) and its test selection. Those are history and are not edited; this
 table resolves them. When WFC mounts a newer version of this library, the
-`TC-0001` to `TC-0004` tests register in WFC's CTest under the new names.
+`TC-0001` to `TC-0004` tests register in WFC's CTest under the new names with
+the library name in front (`wfc-mswinsck-TC-0001-tables`, and so on; the
+`WFC_MSWINSCK_TEST_PREFIX` variable of `CMakeLists.txt`). `TC-0005` is not
+registered there: WFC runs the program under its own name.
