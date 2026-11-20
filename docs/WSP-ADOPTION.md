@@ -45,7 +45,8 @@ needed. Status: Done, Partial, Open, or Decision (owner decides).
 | 80-column style | `WSP-STYLE-0001` | Done, with one tailoring | 32 files pass `Test-SourceStyle.ps1`; `web/index.html` (a demo page, 13 long markup lines) is left out of the scope |
 | Lint stage | `WSP-CHECK-0001`, `0002`, `0003`, `0007` | Done | `scripts/Invoke-Lint.ps1` (style, clang-format, gersemi, PowerShell, YAML, pre-commit validation), pinned tools in `requirements-dev.txt` |
 | Build and test stages | `WSP-CHECK-0002`, `0004`, `WSP-STYLE-0007` | Done | `Invoke-Build.ps1`, `Invoke-Tests.ps1` (x64 Debug, zero tests is an error); about 20 s locally |
-| Commit gate | `WSP-CHECK-0001`, `templates/pre-commit-config.yaml` | Done | `.pre-commit-config.yaml` runs the three stages; install with `pre-commit install` |
+| Commit gate | `WSP-CHECK-0001`, `templates/pre-commit-config.yaml` | Done | `.pre-commit-config.yaml` runs the gate start, then the three stages; install with `pre-commit install` |
+| Single gate and progress window | WFC `AGENTS.md` | Done | `scripts/Start-CommitGate.ps1` takes the machine-wide `wfc-commit-gate.lock` (shared with WFC) and opens `scripts/Show-TestProgress.ps1`, which follows `out/test-progress.log` (lint and build stage lines from `Write-Stage`, then the ctest lines `12/377 Test  #12: name ... Passed` that `Invoke-Tests.ps1` writes). Both scripts are identical to the WFC copies |
 | CI backstop | `WSP-CHECK-0008`, `WSP-TEST-0012`, `0013` | Partial | A lint job now runs the same script (first run not yet seen); the x86/x64/ARM64 build and test matrix already exists |
 | Project AGENTS.md | WFC `AGENTS.md` | Done | `AGENTS.md` (commit and push only on the owner's request) |
 | Commit-checks record | `WSP-CHECK-0006`, `processes/commit-checks.md` | Open | Write `docs/commit-checks.md` as WFC `planning/commit-checks.md` does |
