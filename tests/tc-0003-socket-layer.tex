@@ -1,0 +1,57 @@
+\documentclass[letterpaper]{article}
+
+\usepackage[letterpaper,margin=1in]{geometry}
+
+% Compile from the repository root so this path resolves to the pinned WSP
+% submodule.
+\input{wsp/testing/test-case-library.tex}
+
+\begin{document}
+\def\TCID{TC-0003}
+\def\TCTitle{Socket layer over loopback}
+\def\TCPurpose{Verify the non-blocking socket layer behind the Winsock
+control with a real TCP connection and a UDP datagram on the loopback
+address.}
+\def\TCPriority{\TCPriorityHigh}
+
+\def\TCRequirementRef{REQ-0001}
+\def\TCDesignRef{Not applicable.}
+\def\TCFeatureRef{\texttt{include/wfc/mswinsck/winsock\_io.hpp};
+\texttt{src/winsock\_io.cpp}; \texttt{tests/winsock\_io\_tests.cpp}.}
+\def\TCTestTechnique{Scenario testing of a TCP and a UDP exchange; each wait
+polls up to five seconds.}
+
+\def\TCPreconditions{Windows with WinSock 2; the loopback interface is
+available; the test program \texttt{winsock\_io\_tests} is built (target
+\texttt{wfc\_mswinsck\_io}).}
+\def\TCEnvironment{Windows; registered only when \texttt{WIN32} is set. The
+program binds to \texttt{127.0.0.1} with ports the system picks, so it does
+not conflict with other programs. CTest runs it with a 60 second timeout.}
+\def\TCAssumptions{The loopback interface delivers the data within five
+seconds.}
+
+\def\TCInputData{The text \texttt{hello} (TCP) and \texttt{datagram} (UDP).}
+\def\TCInitialState{No socket is open.}
+
+\def\TCProcedure{\begin{enumerate}
+  \item Run \texttt{winsock\_io\_tests} (CTest \texttt{TC-0003-io}).
+  \item TCP: open a server socket, bind it to port 0 and listen; the port it
+    got is positive. Open a client, connect to it and wait until the
+    connection completes. Accept the connection, check that the peer address
+    is \texttt{127.0.0.1}, send \texttt{hello} from the client and receive it
+    on the accepted socket. Close the client and check that the accepted
+    socket reads end of stream. Close the remaining sockets.
+  \item UDP: open and bind two sockets; send \texttt{datagram} from one to the
+    port of the other and receive it, with the sender address and port.
+  \item Check that the host name is not empty and that the text of socket
+    error 10061 is not empty.
+\end{enumerate}}
+\def\TCExpectedResult{The program exits with status 0 and prints
+\texttt{winsock io: tcp, udp and names are right}; no \texttt{FAIL} line is
+written. The connection completes, the data arrives unchanged, the peer and
+the sender are \texttt{127.0.0.1}, and the close is seen.}
+\def\TCPostConditions{All sockets are closed; no files are written.}
+
+\TCTemplate
+
+\end{document}

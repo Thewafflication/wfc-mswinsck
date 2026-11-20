@@ -1,0 +1,70 @@
+\documentclass[letterpaper]{article}
+
+\usepackage[letterpaper,margin=1in]{geometry}
+
+% Compile from the repository root so this path resolves to the pinned WSP
+% submodule.
+\input{wsp/testing/test-case-library.tex}
+
+\begin{document}
+\def\TCID{TC-0005}
+\def\TCTitle{Winsock control in a WFC program (corpus 196)}
+\def\TCPurpose{Verify the behaviour of the \texttt{Winsock} control as a
+Visual Basic program sees it: states, errors, a TCP connection with an echo,
+\texttt{GetData} with a length, a UDP datagram, and the events in their
+order, all on the loopback address.}
+\def\TCPriority{\TCPriorityHigh}
+
+\def\TCRequirementRef{REQ-0001}
+\def\TCDesignRef{Not applicable.}
+\def\TCFeatureRef{\texttt{tests/corpus/196-ocx-winsock-dialog.vbp},
+\texttt{.frm}, \texttt{.ui}, \texttt{.expected} and \texttt{.debug};
+\texttt{include/wfc/mswinsck/mswinsck.inc};
+\texttt{tests/corpus/run\_corpus\_case.cmake}.}
+\def\TCTestTechnique{Scenario testing with a scripted run; the expected
+output was recorded and is compared line by line.}
+
+\def\TCPreconditions{The WFC compiler and interpreter \texttt{wfc} is
+installed and its path is given to CMake as \texttt{WFC\_EXECUTABLE}; the
+loopback interface is available.}
+\def\TCEnvironment{Windows with WFC. The program runs headless with the UI
+script \texttt{196-ocx-winsock-dialog.ui} (the dialog answers, then
+\texttt{pump 500}); the loopback ports are chosen by the system. Without
+\texttt{WFC\_EXECUTABLE} CTest skips the test. WFC also runs this program in
+its own suite, under its own test name.}
+\def\TCAssumptions{WFC runs the program with \texttt{--interpret} so that the
+event order is deterministic.}
+
+\def\TCInputData{The project \texttt{196-ocx-winsock-dialog.vbp}: five
+\texttt{Winsock} controls (a listener, a client, a server side, two UDP
+controls) and a \texttt{CommonDialog}; the text \texttt{hello} and
+\texttt{datagram}.}
+\def\TCInitialState{Every control is closed (state 0).}
+
+\def\TCProcedure{\begin{enumerate}
+  \item Run \texttt{wfc --interpret 196-ocx-winsock-dialog.vbp} through
+    \texttt{run\_corpus\_case.cmake} (CTest \texttt{TC-0005-winsock-corpus}).
+  \item The program prints the state and protocol of a new control, sends on
+    a closed socket (error 40006), listens on port 0, connects a client
+    (state 6), connects a second time (error 40020) and reads the local IP
+    address and host name.
+  \item The client connects and sends \texttt{hello}; the listener raises
+    \texttt{ConnectionRequest} and the server control accepts; the server
+    receives \texttt{hello} and replies \texttt{reply:hello}; the client
+    reads five bytes with \texttt{GetData}, then the rest; the client closes
+    and the server sees the close (state 8).
+  \item A UDP control binds and another sends it \texttt{datagram}; the
+    datagram arrives with the sender address \texttt{127.0.0.1}.
+  \item The program then exercises the \texttt{CommonDialog} answers of the UI
+    script. That part verifies the dialog control, which belongs to the
+    requirements of the comdlg32 library, and is not a Winsock obligation.
+\end{enumerate}}
+\def\TCExpectedResult{The standard output equals the \texttt{.expected} file
+(empty) and the Immediate-window output equals the \texttt{.debug} file, line
+for line; \texttt{wfc} exits with status 0.}
+\def\TCPostConditions{No file is written; the sockets are closed when the
+program ends.}
+
+\TCTemplate
+
+\end{document}

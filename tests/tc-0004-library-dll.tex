@@ -1,0 +1,72 @@
+\documentclass[letterpaper]{article}
+
+\usepackage[letterpaper,margin=1in]{geometry}
+
+% Compile from the repository root so this path resolves to the pinned WSP
+% submodule.
+\input{wsp/testing/test-case-library.tex}
+
+\begin{document}
+\def\TCID{TC-0004}
+\def\TCTitle{Library DLL, version resource and registration}
+\def\TCPurpose{Verify that \texttt{wfcmswinsck.dll} exports the COM entry
+points, carries the version and target it was built from, makes a control
+through its class factory, and registers and unregisters itself under WFC's
+own and the Microsoft identifiers.}
+\def\TCPriority{\TCPriorityHigh}
+
+\def\TCRequirementRef{REQ-0002}
+\def\TCDesignRef{Not applicable.}
+\def\TCFeatureRef{\texttt{src/registration.cpp};
+\texttt{src/wfcmswinsck.def}; \texttt{version.rc.in};
+\texttt{tests/mswinsck\_dll\_test.c}; \texttt{tests/dll\_check.h}.}
+\def\TCTestTechnique{Black-box testing of the DLL from a C program that uses
+it as any other program would; round-trip testing of the registration.}
+
+\def\TCPreconditions{Windows; the library is configured with
+\texttt{WFC\_MSWINSCK\_SHARED=ON} and the DLL is built; the registry of the
+current user does not already hold \texttt{Software\textbackslash WFC%
+\textbackslash Libraries\textbackslash mswinsck}.}
+\def\TCEnvironment{Windows; registered only for the shared build. The test
+holds the CTest resource lock \texttt{registry} so that two registration
+tests do not run together. The program writes only under the current user
+(\texttt{WFC\_REGISTER\_SCOPE=user}).}
+\def\TCAssumptions{The registry of the current user is writable.}
+
+\def\TCInputData{The path of the DLL, the contents of \texttt{VERSION} and of
+\texttt{TARGET}; the class \texttt{WFC.MSWinsockLib.Winsock} with its class
+id, and the Microsoft ProgID \texttt{MSWinsockLib.Winsock.1} with its class
+id.}
+\def\TCInitialState{The library is not registered for the current user.}
+
+\def\TCProcedure{\begin{enumerate}
+  \item Run \texttt{mswinsck\_dll\_test} (CTest \texttt{TC-0004-dll}) with
+    the DLL, the version and the target as arguments.
+  \item Load the DLL; check that \texttt{DllRegisterServer},
+    \texttt{DllUnregisterServer}, \texttt{DllGetClassObject} and
+    \texttt{DllCanUnloadNow} exist, that \texttt{DllCanUnloadNow} answers
+    \texttt{S\_OK} and that \texttt{DllGetClassObject} answers
+    \texttt{CLASS\_E\_CLASSNOTAVAILABLE} for an unknown class id.
+  \item Read the version resource: the file version equals the version given
+    and the \texttt{Comments} string names the target.
+  \item Register with \texttt{WFC\_REGISTER\_MICROSOFT\_IDS=0}; check the
+    library key (version, \texttt{Target}, \texttt{Server}) and the ProgID
+    and class id keys; unregister and check that nothing is left.
+  \item If the Microsoft class id is not in the registry of the current
+    user, repeat step 4 with \texttt{WFC\_REGISTER\_MICROSOFT\_IDS=1}; the
+    Microsoft ProgID and class id are served by the DLL and removed again.
+  \item Create the control through the class factory: it keeps a Long written
+    to \texttt{LocalPort}, accepts the method \texttt{Close}, does not know an
+    unknown name, refuses aggregation, and \texttt{DllCanUnloadNow} answers
+    \texttt{S\_OK} after the release.
+\end{enumerate}}
+\def\TCExpectedResult{The program exits with status 0 and prints
+\texttt{mswinsck: exports, version \ldots{} and registration are right} and
+the line for the created control. Exit status 77 means the registry already
+held the library, and CTest then reports the test as skipped.}
+\def\TCPostConditions{The registry of the current user holds no key of the
+library; the DLL stays in the build folder.}
+
+\TCTemplate
+
+\end{document}

@@ -163,10 +163,10 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
   if(COMMAND wsp_enable_hardening)
     wsp_enable_hardening(mswinsck_tables_test)
   endif()
-  add_test(NAME TC-MP0010-mswinsck-tables COMMAND mswinsck_tables_test)
+  add_test(NAME TC-0001-tables COMMAND mswinsck_tables_test)
   set_tests_properties(
-    TC-MP0010-mswinsck-tables
-    PROPERTIES LABELS "unit;mp-0010;mswinsck" TIMEOUT 120
+    TC-0001-tables
+    PROPERTIES LABELS "unit;mswinsck" TIMEOUT 120
   )
 
   add_executable(mswinsck_states_test tests/states_test.cpp)
@@ -185,10 +185,10 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
   if(COMMAND wsp_enable_hardening)
     wsp_enable_hardening(mswinsck_states_test)
   endif()
-  add_test(NAME TC-MP0010-mswinsck-states COMMAND mswinsck_states_test)
+  add_test(NAME TC-0002-states COMMAND mswinsck_states_test)
   set_tests_properties(
-    TC-MP0010-mswinsck-states
-    PROPERTIES LABELS "unit;mp-0010;mswinsck" TIMEOUT 120
+    TC-0002-states
+    PROPERTIES LABELS "unit;mswinsck" TIMEOUT 120
   )
 
   if(WIN32)
@@ -201,10 +201,10 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
     if(COMMAND wsp_enable_hardening)
       wsp_enable_hardening(winsock_io_tests)
     endif()
-    add_test(NAME TC-MP0010-mswinsck-io COMMAND winsock_io_tests)
+    add_test(NAME TC-0003-io COMMAND winsock_io_tests)
     set_tests_properties(
-      TC-MP0010-mswinsck-io
-      PROPERTIES LABELS "integration;mp-0010;mswinsck" TIMEOUT 60
+      TC-0003-io
+      PROPERTIES LABELS "integration;mswinsck" TIMEOUT 60
     )
   endif()
 
@@ -222,21 +222,53 @@ if(BUILD_TESTING AND WFC_BUILD_TESTS)
       wsp_enable_hardening(mswinsck_dll_test)
     endif()
     add_test(
-      NAME TC-MP0010-mswinsck-dll
+      NAME TC-0004-dll
       COMMAND
         mswinsck_dll_test "$<TARGET_FILE:wfc_mswinsck>"
         "${WFC_MSWINSCK_VERSION}" "${WFC_LIB_TARGET}"
     )
     set_tests_properties(
-      TC-MP0010-mswinsck-dll
+      TC-0004-dll
       PROPERTIES
-        LABELS "integration;mp-0010;mswinsck"
+        LABELS "integration;mswinsck"
         RESOURCE_LOCK registry
         SKIP_RETURN_CODE 77
     )
   endif()
 endif()
 
+# TC-0005 runs the corpus program of the library with WFC (the interpreter and
+# compiler these controls belong to), whose path is WFC_EXECUTABLE; without it
+# the test is skipped. Inside WFC the same program runs under WFC's own name.
+if(
+  BUILD_TESTING
+  AND WFC_BUILD_TESTS
+  AND CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR
+)
+  set(
+    WFC_EXECUTABLE
+    ""
+    CACHE FILEPATH
+    "wfc.exe that runs the corpus test case TC-0005 (empty: skipped)"
+  )
+  set(corpus_case "${CMAKE_CURRENT_SOURCE_DIR}/tests/corpus")
+  add_test(
+    NAME TC-0005-winsock-corpus
+    COMMAND
+      "${CMAKE_COMMAND}" "-DWFC=${WFC_EXECUTABLE}"
+      "-DINPUT=${corpus_case}/196-ocx-winsock-dialog.vbp"
+      "-DEXPECTED=${corpus_case}/196-ocx-winsock-dialog.expected"
+      "-DDEBUG_EXPECTED=${corpus_case}/196-ocx-winsock-dialog.debug" -P
+      "${corpus_case}/run_corpus_case.cmake"
+  )
+  set_tests_properties(
+    TC-0005-winsock-corpus
+    PROPERTIES
+      LABELS "integration;mswinsck;corpus"
+      TIMEOUT 120
+      SKIP_REGULAR_EXPRESSION "SKIPPED:"
+  )
+endif()
 # --- WebAssembly demo ---------------------------------------------------------
 # With Emscripten the member table also builds as a module and a page that lists
 # the classes (web/index.html); CI opens the page in Chromium for the README

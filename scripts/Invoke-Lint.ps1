@@ -4,6 +4,7 @@ Runs the library canonical lint stage.
 .DESCRIPTION
 Checks the complete owned source and configuration scope:
 - WSP physical style (80 columns, UTF-8, whitespace, final newline);
+- requirement and test case traceability (WSP-TEST-0005, Test-Traceability);
 - clang-format check mode for C++ (WSP-LANG-0002);
 - gersemi check mode for CMake (WSP-LANG-0010);
 - PowerShell syntax (WSP-LANG-0007);
@@ -37,6 +38,13 @@ try {
         "& ./wsp/tools/Test-SourceStyle.ps1 -RepositoryRoot '$root' " +
         "-SourcePath @($quoted)")
 
+    Write-Stage '[lint] requirement and test case traceability'
+    Invoke-CheckedCommand pwsh @('-NoProfile', '-File',
+        './wsp/tools/Test-Traceability.ps1', '-RepositoryRoot', $root,
+        '-RequirementsPath', 'requirements',
+        '-TestSpecificationsPath', 'tests',
+        '-TestImplementationsPath', 'tests')
+
     Write-Stage '[lint] clang-format (C++)'
     $clangFormat = Resolve-PinnedTool 'clang-format' '22.1.3'
     $cxx = Get-OwnedFile @('src', 'include', 'tests', 'web') `
@@ -55,7 +63,7 @@ try {
     Write-Stage '[lint] PowerShell syntax and analysis'
     # Test-RepositorySyntax.ps1 scans the WSP checkout itself, so the
     # library's own scripts are parsed here.
-    $ps = Get-OwnedFile @('scripts') @('.ps1', '.psm1')
+    $ps = Get-OwnedFile @('scripts', 'tests') @('.ps1', '.psm1')
     foreach ($file in $ps) {
         $errors = $null
         [Management.Automation.Language.Parser]::ParseFile(
@@ -65,8 +73,10 @@ try {
         }
     }
     Import-Module PSScriptAnalyzer -RequiredVersion 1.25.0
-    $findings = @(Invoke-ScriptAnalyzer -Path scripts -Recurse `
-            -Settings PSScriptAnalyzerSettings.psd1)
+    $findings = @('scripts', 'tests' | ForEach-Object {
+            Invoke-ScriptAnalyzer -Path $_ -Recurse `
+                -Settings PSScriptAnalyzerSettings.psd1
+        })
     if ($findings.Count -gt 0) {
         $findings | Format-Table ScriptName, Line, RuleName, Message -Wrap |
             Out-String | Write-Output

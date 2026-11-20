@@ -1,5 +1,5 @@
 // Native replacement for the Winsock control (`mswinsck.ocx`, library
-// MSWinsockLib; MP-0008, REQ-0305). Included once by forms.cpp after ocx_support.inc,
+// MSWinsockLib; MP-0008, REQ-0001). Included once by forms.cpp after ocx_support.inc,
 // inside namespace wfc::detail. Internal to the WFC evaluator; not part of the
 // public API.
 

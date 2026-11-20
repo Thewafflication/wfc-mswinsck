@@ -1,4 +1,4 @@
-# REQ-0305 — Winsock control (`MSWinsockLib.Winsock`)
+# REQ-0001 — Winsock control (`MSWinsockLib.Winsock`)
 
 **Content type:** Project requirement
 
@@ -45,4 +45,17 @@ multicast options.
 
 ## Verification
 
-Corpus `196-ocx-winsock-dialog` (TCP and UDP over loopback).
+**Method:** Test
+
+**References:** `TC-0001`, `TC-0002`, `TC-0003`, `TC-0005`
+
+- `TC-0001` checks the member table (the class, the members and the events).
+- `TC-0002` checks the state rules (the states, errors 40006 and 40020).
+- `TC-0003` checks the socket layer over loopback (TCP and UDP).
+- `TC-0005` runs the corpus program `196-ocx-winsock-dialog` (TCP and UDP
+  over loopback through the control) with WFC.
+
+## Relationships
+
+- **Formerly:** `REQ-0305` of the WFC repository (see `docs/id-map.md`).
+- **Related:** `REQ-0002` (the library DLL that carries the member table).

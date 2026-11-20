@@ -1,6 +1,6 @@
 #pragma once
 
-// Non-blocking sockets for the Winsock control (REQ-0305). Kept apart from
+// Non-blocking sockets for the Winsock control (REQ-0001). Kept apart from
 // forms.cpp because winsock2.h must not meet windows.h's winsock.h. Internal
 // to the WFC runtime.
 

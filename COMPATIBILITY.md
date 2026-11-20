@@ -13,7 +13,7 @@ Written by hand from the documented members of the control; the socket layer is 
 1 class(es), 22 members and 7 events are in
 the table. *Table* means the member exists with the Microsoft name, kind, type
 and dispatch id. *Behaviour* is implemented by the WFC evaluator and covered by
-its corpus and GUI tests (`TC-MP0006-*`, `TC-MP0010-*`); per-member behaviour
+its corpus and GUI tests (WFC test names `TC-MP0006-*`, `TC-MP0002-corpus-*`; the corpus program of this library is `TC-0005`); per-member behaviour
 status is tracked in WFC until the behaviour moves into this library (see the
 [roadmap](ROADMAP.md), 0.7).
 
@@ -34,9 +34,9 @@ status is tracked in WFC until the behaviour moves into this library (see the
 
 ## How it is checked
 
-- A C program (`tests/mswinsck_dll_test.c`) loads the DLL, checks its COM entry
+- A C program (`tests/mswinsck_dll_test.c`, `TC-0004`) loads the DLL, checks its COM entry
   points and version resource, and registers and unregisters it.
-- A table test (`tests/mswinsck_tables_test.cpp`) checks the classes and the
+- A table test (`tests/mswinsck_tables_test.cpp`, `TC-0001`) checks the classes and the
   member kinds.
 - WFC compares the table with the type-library evidence
   (`TC-MP0006-comctl-tables-current` for the generated tables) and runs its

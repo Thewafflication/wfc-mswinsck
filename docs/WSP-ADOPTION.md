@@ -49,9 +49,9 @@ needed. Status: Done, Partial, Open, or Decision (owner decides).
 | CI backstop | `WSP-CHECK-0008`, `WSP-TEST-0012`, `0013` | Partial | A lint job now runs the same script (first run not yet seen); the x86/x64/ARM64 build and test matrix already exists |
 | Project AGENTS.md | WFC `AGENTS.md` | Done | `AGENTS.md` (commit and push only on the owner's request) |
 | Commit-checks record | `WSP-CHECK-0006`, `processes/commit-checks.md` | Open | Write `docs/commit-checks.md` as WFC `planning/commit-checks.md` does |
-| Requirement IDs | `style/artifact-identifiers.md` | Decision | Only `REQ-0305` exists, inherited from WFC numbering; see the decisions below |
-| Requirement structure | `WSP-REQM-0001` to `0010`, `requirements/requirement-template.md` | Partial | One requirement, status "Proposed", no per-statement IDs or verification table; split into statements with stable IDs |
-| Test cases and traceability | `WSP-TEST-0001` to `0005`, `0011`, `tools/Test-Traceability.ps1` | Open | CTest names are `TC-MP0010-mswinsck-*` (a WFC milestone prefix, not `TC-NNNN`); there are no test-case specifications, and the corpus case `TC-*` named in `REQ-0305` runs only in WFC |
+| Requirement IDs | `style/artifact-identifiers.md` | Done | The library has its own namespace: `REQ-0001` (formerly WFC `REQ-0305`) and `REQ-0002`; `docs/id-map.md` maps the old identifiers |
+| Requirement structure | `WSP-REQM-0001` to `0010`, `requirements/requirement-template.md` | Partial | Two requirements, status "Proposed", with verification references; no per-statement IDs yet (split into statements with stable IDs) |
+| Test cases and traceability | `WSP-TEST-0001` to `0005`, `0011`, `tools/Test-Traceability.ps1` | Done | Five test cases `TC-0001` to `TC-0005`: specification `tests/tc-NNNN-*.tex`, CTest `TC-NNNN-<name>`, runner `tests/run-tc-NNNN.ps1`; the corpus case runs here when CMake is given `WFC_EXECUTABLE`. `Test-Traceability.ps1` runs in the lint stage and passes (2 requirements, 5 specifications, 5 implementations) |
 | Test evidence and reports | `WSP-TEST-0006` to `0010`, `tools/Test-TestEvidence.ps1`, `New-TestReport.ps1` | Open | Needs test-case specifications first |
 | Static analysis | `WSP-SAST-0001` to `0006`, `tools/static-analysis` | Open | Add clang-tidy with `wsp-clang-tidy.yml`; the build already includes `WspBuild.cmake` hardening |
 | Source documentation | `WSP-STYLE-0006`, `style/source-documentation.md` | Open | No `Doxyfile`; headers lack Doxygen contracts |
@@ -64,12 +64,13 @@ needed. Status: Done, Partial, Open, or Decision (owner decides).
 
 ## Decisions for the owner
 
-1. **Requirement numbering.** Keep the WFC `REQ-NNNN` numbers (REQ-0305 in a
-   library-owned namespace, shared with WFC) or give this library its own
-   sequence (for example `REQ-0001`) and record the WFC number as a
-   cross-reference. A shared namespace needs a rule for who assigns numbers.
-2. **Test case identifiers.** Rename `TC-MP0010-*` to `TC-NNNN` (a stable name
-   must not carry a milestone) or keep them and document the format.
+1. **Requirement numbering.** Decided: own sequence from `REQ-0001`; the WFC
+   number is recorded in `docs/id-map.md`.
+2. **Test case identifiers.** Decided: `TC-NNNN`, CTest `TC-NNNN-<name>`. Open
+   consequence: when WFC mounts the library its tests register under these
+   names, and the other libraries use the same numbers (`TC-0001-...`); WFC
+   needs a rule (a prefix, or registering library tests only in the
+   standalone build).
 3. **Reformat the rest.** Done in this pass because only five files changed.
    The remaining lint scope (`web/index.html`) is left out; decide whether to
    wrap it.
@@ -81,5 +82,5 @@ needed. Status: Done, Partial, Open, or Decision (owner decides).
 | Item | Disposition |
 | --- | --- |
 | Requirements | Adopted: `requirements/` (moved from WFC); restructure per the gap analysis |
-| Traceability check | Open: needs test-case specifications and the identifier decision |
+| Traceability check | Done: runs in the lint stage (`-RequirementsPath requirements -TestSpecificationsPath tests -TestImplementationsPath tests`) |
 | Signing | Planned for the first release |

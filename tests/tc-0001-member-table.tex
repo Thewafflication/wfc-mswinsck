@@ -1,0 +1,49 @@
+\documentclass[letterpaper]{article}
+
+\usepackage[letterpaper,margin=1in]{geometry}
+
+% Compile from the repository root so this path resolves to the pinned WSP
+% submodule.
+\input{wsp/testing/test-case-library.tex}
+
+\begin{document}
+\def\TCID{TC-0001}
+\def\TCTitle{Winsock member table}
+\def\TCPurpose{Verify that the member table of the library describes the
+\texttt{Winsock} class with named members of known kinds and events that are
+methods.}
+\def\TCPriority{\TCPriorityMedium}
+
+\def\TCRequirementRef{REQ-0001}
+\def\TCDesignRef{Not applicable.}
+\def\TCFeatureRef{\texttt{include/wfc/mswinsck/mswinsck.hpp};
+\texttt{src/mswinsck\_tables.cpp};
+\texttt{tests/mswinsck\_tables\_test.cpp}.}
+\def\TCTestTechnique{Structural inspection of the table: every class, member
+and event is visited once.}
+
+\def\TCPreconditions{The library is built (target \texttt{wfc\_mswinsck}) and
+the test program \texttt{mswinsck\_tables\_test} exists.}
+\def\TCEnvironment{Any supported target; the table is part of every build,
+static or shared. CTest runs the program with a 120 second timeout.}
+\def\TCAssumptions{Not applicable.}
+
+\def\TCInputData{The table returned by \texttt{wfc::ui::mswinsck\_classes()}.}
+\def\TCInitialState{None; the table is constant data.}
+
+\def\TCProcedure{\begin{enumerate}
+  \item Run \texttt{mswinsck\_tables\_test} (CTest \texttt{TC-0001-tables}).
+  \item The program reads the class list and compares its size and class
+    names with the expected list, which is the single class
+    \texttt{Winsock}.
+  \item For each class it checks that the class has members, that each member
+    has a non-empty name and a kind of \texttt{g}, \texttt{l}, \texttt{s} or
+    \texttt{m}, and that each event has the kind \texttt{m}.
+\end{enumerate}}
+\def\TCExpectedResult{The program exits with status 0 and prints
+\texttt{mswinsck: 1 classes}; no \texttt{FAIL} line is written.}
+\def\TCPostConditions{None; the test writes no files.}
+
+\TCTemplate
+
+\end{document}

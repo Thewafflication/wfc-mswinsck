@@ -1,0 +1,58 @@
+\documentclass[letterpaper]{article}
+
+\usepackage[letterpaper,margin=1in]{geometry}
+
+% Compile from the repository root so this path resolves to the pinned WSP
+% submodule.
+\input{wsp/testing/test-case-library.tex}
+
+\begin{document}
+\def\TCID{TC-0002}
+\def\TCTitle{Winsock state rules}
+\def\TCPurpose{Verify the rules that say which socket states allow
+\texttt{Listen}, \texttt{Bind}, \texttt{Connect}, \texttt{Accept},
+\texttt{SendData} and a change of \texttt{Protocol}, and the errors raised
+otherwise.}
+\def\TCPriority{\TCPriorityHigh}
+
+\def\TCRequirementRef{REQ-0001}
+\def\TCDesignRef{Not applicable.}
+\def\TCFeatureRef{\texttt{include/wfc/mswinsck/states.hpp};
+\texttt{tests/states\_test.cpp}.}
+\def\TCTestTechnique{State-transition testing of the guard functions
+(\texttt{check\_listen}, \texttt{check\_closed}, \texttt{check\_send},
+\texttt{keeps\_host\_awake}) with representative states.}
+
+\def\TCPreconditions{The library is built and the test program
+\texttt{mswinsck\_states\_test} exists.}
+\def\TCEnvironment{Any supported target; the rules are header-only logic with
+no sockets. CTest runs the program with a 120 second timeout.}
+\def\TCAssumptions{Not applicable.}
+
+\def\TCInputData{The states closed, open, listening, connecting, connected and
+error; the protocol flag (TCP or UDP).}
+\def\TCInitialState{None; the functions have no state.}
+
+\def\TCProcedure{\begin{enumerate}
+  \item Run \texttt{mswinsck\_states\_test} (CTest
+    \texttt{TC-0002-states}).
+  \item Check the error numbers (40020 for an invalid operation, 40006 for a
+    wrong state, 0 for none) and the texts of the two errors.
+  \item Check \texttt{Listen} from closed and open (allowed) and from
+    listening and connected (error 40020); \texttt{Listen} on UDP is a wrong
+    state, and the state is checked first.
+  \item Check that \texttt{Bind}, \texttt{Connect}, \texttt{Accept} and a
+    change of \texttt{Protocol} need the closed state (error 40020 from open
+    or connecting).
+  \item Check that \texttt{SendData} on TCP needs a connection (error 40006
+    when closed) and on UDP does not.
+  \item Check that an open, connecting or listening socket keeps the host
+    awake and a closed or failed one does not.
+\end{enumerate}}
+\def\TCExpectedResult{The program exits with status 0 and prints
+\texttt{states: ok}; no \texttt{FAIL} line is written.}
+\def\TCPostConditions{None; the test writes no files.}
+
+\TCTemplate
+
+\end{document}

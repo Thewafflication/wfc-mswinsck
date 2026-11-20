@@ -36,7 +36,9 @@ submodule (see `docs/WSP-ADOPTION.md`).
   checked by `wsp/tools/Test-SourceStyle.ps1`; `.clang-format`, `.gersemirc`
   and `.editorconfig` are copies of the WFC ones.
 - Never modify `wsp/`; bump it by pinning a newer release tag.
-- Requirements are `REQ-NNNN` under `requirements/`, test cases `TC-*` CTest
-  names; keep identifiers stable and never reuse one (WSP artifact
+- Requirements are `REQ-NNNN` under `requirements/`, test cases `TC-NNNN`
+  (specification `tests/tc-NNNN-*.tex`, CTest name `TC-NNNN-<name>`, runner
+  `tests/run-tc-NNNN.ps1`), both numbered from 0001 in this repository's own
+  namespace (`docs/id-map.md` has the old WFC identifiers); keep identifiers stable and never reuse one (WSP artifact
   identifiers).
 - `VERSION` is the library version; a release tag is the owner's decision.
