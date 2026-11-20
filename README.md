@@ -19,15 +19,18 @@ the parent default is `WFC_OCX_SHARED`).
 
 ## Screenshots
 
-![The Winsock echo example (`examples/winsock-echo`): a server and a client on the loopback address.](docs/images/winsock-echo.png)
+<img src="docs/images/winsock-echo.png" width="480" alt="The Winsock echo example: a server and a client on the loopback address, the log of the exchange on a card.">
 
-The Winsock echo example (`examples/winsock-echo`): a server and a client on the loopback address. Run it with [WFC](https://github.com/Thewafflication/wfc):
+The Winsock echo example (`examples/winsock-echo`): a server and a client on
+the loopback address, with the log of the exchange. Run it with
+[WFC](https://github.com/Thewafflication/wfc):
 
 ```
 wfc run examples/winsock-echo/echo.vbp --gui
 ```
 
-The images are made with `wfc run ... --gui --screenshots <dir>`.
+`scripts/New-Screenshot.ps1` makes the image with `wfc run ... --gui
+--screenshots <dir>`; it captures the program's own window.
 
 ### Linux (Winelib)
 
@@ -41,7 +44,7 @@ there). These images are rendered from the real CI output by
 
 ### WebAssembly
 
-![The wfc-mswinsck member table in a web page, compiled with Emscripten](docs/images/webassembly.png)
+<img src="docs/images/webassembly.png" width="720" alt="The wfc-mswinsck member table in a web page, compiled with Emscripten: the properties, methods and events of Winsock as chips on a card.">
 
 The member table compiled to WebAssembly and listed by a page
 (`web/index.html`), captured in Chromium by `scripts/capture_web.py` in CI.

@@ -61,6 +61,7 @@ needed. Status: Done, Partial, Open, or Decision (owner decides).
 | Signing and Defender | `WSP-SIGN-*` | Deferred | Until the first release, through the WFC workflow |
 | Documentation structure | `WSP-DOC-*`, `style/documentation-style.md` | Partial | `README.md`, `ROADMAP.md`, `COMPATIBILITY.md`; no documentation manifest or PDF |
 | Security/DFS | `WSP-SEC-*`, `security/dfs-template.md` | Partial | Hardening flags in the build; no DFS record |
+| README visuals | WFC house style (`tests/vb6games/ui/modTheme.bas`) | Done, with two limits | The echo example window and the WebAssembly page use the navy/teal/amber look; `scripts/New-Screenshot.ps1` regenerates the echo image. The committed `webassembly.png` was rendered from the page with the member table stubbed (CI regenerates it from the real module). The Linux Winelib images come from CI through `scripts/render_terminal.py`, which is shared by all libraries (a WFC test compares the copies), so it keeps its terminal look |
 | Process records (plan, review, closeout, work log) | `processes/*-template.md` | Deferred | WFC milestone records cover this library; add its own once it has milestones of its own |
 
 ## Decisions for the owner

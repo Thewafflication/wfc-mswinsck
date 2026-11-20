@@ -5,24 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>wfc-mswinsck in WebAssembly</title>
 <style>
-  :root { color-scheme: light dark; --bg: #f4f5f7; --card: #fff; --ink: #1b1f24;
-    --muted: #5b6573; --line: #d8dde4; --accent: #0b5fff; }
-  @media (prefers-color-scheme: dark) { :root { --bg: #14171c; --card: #1d2229;
-    --ink: #e8ebf0; --muted: #98a2b0; --line: #2d3540; --accent: #6ea0ff; } }
-  body { margin: 0; padding: 24px 16px; background: var(--bg); color: var(--ink);
-    font: 15px/1.45 system-ui, sans-serif; }
-  main { max-width: 900px; margin: 0 auto; }
-  h1 { font-size: 22px; margin: 0 0 4px; }
-  p.sub { margin: 0 0 18px; color: var(--muted); }
-  .cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px;
-    padding: 12px 14px; }
-  .card h2 { font-size: 16px; margin: 0 0 2px; }
-  .counts { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
-  code { font: 12.5px ui-monospace, Consolas, monospace; }
-  .list { color: var(--accent); }
-  .more { color: var(--muted); }
-  footer { margin-top: 18px; color: var(--muted); font-size: 13px; }
+  /* The house look of the WFC games and libraries: a navy page, raised panels
+     with a thin light edge and a soft two-step shadow, a teal accent. */
+  :root {
+    --back: #11141f; --panel: #1b2033; --panel2: #252b3d; --edge: #35405c; --text: #e8ebf5;
+    --muted: #98a0b8;    --teal: #3dd6c6;
+    --amber: #ffb454;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 56px 24px; background: var(--back); color: var(--text);
+    font: 16px/1.5 "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 880px; margin: 0 auto; }
+  h1 {
+    font-size: 34px; line-height: 1.15; margin: 0 0 6px; color: var(--teal);
+    font-weight: 700; letter-spacing: -0.01em;
+  }
+  p.sub { margin: 0 0 32px; color: var(--muted); font-size: 17px; }
+  .cards { display: grid; gap: 28px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--edge);
+    border-radius: 10px; padding: 26px 28px 28px;
+    box-shadow: 3px 4px 0 #0f0a08, 7px 9px 0 #17100d,
+      0 18px 36px rgba(0, 0, 0, 0.35);
+  }
+  .card h2 { font-size: 24px; margin: 0 0 2px; font-weight: 600; }
+  .counts { color: var(--muted); font-size: 15px; margin-bottom: 22px; }
+  h3 {
+    font-size: 12px; margin: 22px 0 10px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.12em; font-weight: 600;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font: 14px/1 Consolas, ui-monospace, monospace; padding: 8px 12px;
+    border-radius: 6px; background: var(--panel2); color: var(--text);
+    border: 1px solid var(--edge);
+  }
+  .chip.event { color: var(--amber); border-color: #5a4a35; }
+  footer { margin-top: 36px; color: var(--muted); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -41,23 +62,42 @@
     document.getElementById('title').textContent =
       text('library_name') + ' in WebAssembly';
     document.getElementById('sub').textContent =
-      'version ' + text('library_version') + ', targets ' + text('library_target');
+      'Version ' + text('library_version') + ', targets ' + text('library_target');
+    const chips = (names, kind) => {
+      const group = document.createElement('div');
+      group.className = 'chips';
+      for (const name of names) {
+        const chip = document.createElement('span');
+        chip.className = 'chip ' + kind;
+        chip.textContent = name;
+        group.appendChild(chip);
+      }
+      return group;
+    };
+    const heading = (label) => {
+      const h = document.createElement('h3');
+      h.textContent = label;
+      return h;
+    };
     const cards = document.getElementById('cards');
     for (let c = 0; c < num('class_count'); c++) {
       const members = num('member_count', c), events = num('event_count', c);
-      const names = [];
-      for (let i = 0; i < Math.min(members, 8); i++) names.push(text('member_name', c, i));
-      const handlers = [];
-      for (let i = 0; i < Math.min(events, 4); i++) handlers.push(text('event_name', c, i));
+      // A property that can be read and written has two rows in the table.
+      const names = new Set(), handlers = [];
+      for (let i = 0; i < members; i++) names.add(text('member_name', c, i));
+      for (let i = 0; i < events; i++) handlers.push(text('event_name', c, i));
       const card = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = '<h2></h2><div class="counts"></div><code class="list"></code>' +
-        '<div><code class="more"></code></div>';
+      card.innerHTML = '<h2></h2><div class="counts"></div>';
       card.querySelector('h2').textContent = text('class_name', c);
-      card.querySelector('.counts').textContent = members + ' members, ' + events + ' events';
-      card.querySelector('.list').textContent = names.join(', ') + (members > 8 ? ', ...' : '');
-      card.querySelector('.more').textContent =
-        events ? 'events: ' + handlers.join(', ') + (events > 4 ? ', ...' : '') : '';
+      card.querySelector('.counts').textContent =
+        members + ' members, ' + events + ' events';
+      card.appendChild(heading('Properties and methods'));
+      card.appendChild(chips(names, 'member'));
+      if (events) {
+        card.appendChild(heading('Events'));
+        card.appendChild(chips(handlers, 'event'));
+      }
       cards.appendChild(card);
     }
     const ready = document.createElement('span');
