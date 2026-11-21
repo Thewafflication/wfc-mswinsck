@@ -1,4 +1,4 @@
-LIBRARY wfcmswinsck
+LIBRARY mswinsck.ocx
 EXPORTS
     DllRegisterServer PRIVATE
     DllUnregisterServer PRIVATE

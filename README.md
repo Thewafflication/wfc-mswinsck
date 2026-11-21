@@ -12,9 +12,9 @@ Winsock for WFC: the native replacement for `mswinsck.ocx` (library MSWinsockLib
   types, so it builds only inside WFC.
 - `include/wfc/ocx/control_class.hpp` the table types, identical in every WFC
   control library (a WFC test checks the copies).
-- `VERSION` the library version, stamped into `wfcmswinsck.dll`.
+- `VERSION` the library version, stamped into `mswinsck.ocx`.
 
-Target: `wfc_mswinsck` (static library, or `wfcmswinsck.dll` with `WFC_MSWINSCK_SHARED=ON`;
+Target: `wfc_mswinsck` (static library, or `mswinsck.ocx` with `WFC_MSWINSCK_SHARED=ON`;
 the parent default is `WFC_OCX_SHARED`).
 
 ## Screenshots
@@ -87,7 +87,7 @@ DLL's version resource (`FileVersion`, `Comments`).
 
 ## Registration with Windows
 
-`regsvr32 wfcmswinsck.dll` (`/u` to remove) writes `Software\WFC\Libraries\mswinsck`
+`regsvr32 mswinsck.ocx` (`/u` to remove) writes `Software\WFC\Libraries\mswinsck`
 (version, target, path) and, for every control, a class under WFC's own ProgID and class id (`WFC.<Library>.<Class>`) with the DLL as in-process server. `WFC_REGISTER_SCOPE=user|machine` picks the registry
 (default: the machine, the user when that is not writable). With `WFC_REGISTER_MICROSOFT_IDS=1` the controls are also served under the Microsoft ProgIDs and class ids; what was registered there before is saved and restored by `regsvr32 /u`. `DllGetClassObject` returns a class factory whose objects are late-bound (IDispatch) controls built from the member table: a property keeps the value it is given and a method is accepted, with no WFC evaluator; the behaviour of the controls is still implemented by the evaluator of WFC.
 

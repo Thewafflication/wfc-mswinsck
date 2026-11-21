@@ -2,7 +2,7 @@
 #
 # The member table is written by hand from the documented members;
 # src/winsock_io.cpp is the socket layer. The table is built static by
-# default; WFC_MSWINSCK_SHARED builds it as wfcmswinsck.dll so a program can
+# default; WFC_MSWINSCK_SHARED builds it as mswinsck.ocx so a program can
 # load it at run time instead. The version is the one in VERSION and is
 # stamped into the DLL's version resource.
 #
@@ -56,7 +56,7 @@ if(NOT DEFINED WFC_OCX_SHARED)
 endif()
 option(
   WFC_MSWINSCK_SHARED
-  "Build the WFC mswinsck library as wfcmswinsck.dll"
+  "Build the WFC mswinsck library as mswinsck.ocx"
   ${WFC_OCX_SHARED}
 )
 
@@ -92,6 +92,7 @@ if(WFC_MSWINSCK_SHARED AND WIN32)
     @ONLY
   )
   set(WFC_LIB_NAME wfcmswinsck)
+  set(WFC_LIB_FILE mswinsck.ocx)
   set(WFC_LIB_DESCRIPTION "WFC Winsock")
   configure_file(
     version.rc.in
@@ -116,7 +117,10 @@ if(WFC_MSWINSCK_SHARED AND WIN32)
   set_target_properties(
     wfc_mswinsck
     PROPERTIES
-      OUTPUT_NAME wfcmswinsck
+      OUTPUT_NAME mswinsck
+      SUFFIX ".ocx"
+      ARCHIVE_OUTPUT_NAME wfcmswinsck
+      PDB_NAME wfcmswinsck
       VERSION "${WFC_MSWINSCK_VERSION}"
       RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}"
   )
@@ -160,7 +164,7 @@ endif()
 
 # --- Tests --------------------------------------------------------------------
 # The table (any build) and, in the shared build, the DLL itself: a C program
-# loads wfcmswinsck.dll, checks its COM entry points and version resource, and
+# loads mswinsck.ocx, checks its COM entry points and version resource, and
 # registers and unregisters it in the registry of the current user.
 if(BUILD_TESTING AND WFC_BUILD_TESTS)
   add_executable(mswinsck_tables_test tests/mswinsck_tables_test.cpp)

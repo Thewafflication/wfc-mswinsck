@@ -10,7 +10,7 @@ Visual Studio platform: x64 (default), Win32, or ARM64.
 CMake binary directory, relative to the repository root.
 .PARAMETER Static
 Builds the static library instead of the DLL. The default builds
-wfcmswinsck.dll (WFC_MSWINSCK_SHARED=ON), which test case TC-0004 needs.
+mswinsck.ocx (WFC_MSWINSCK_SHARED=ON), which test case TC-0004 needs.
 .PARAMETER WfcExecutable
 wfc.exe that runs test case TC-0005 (the corpus program). Defaults to the
 WFC_EXECUTABLE environment variable, then to wfc on PATH; without one TC-0005

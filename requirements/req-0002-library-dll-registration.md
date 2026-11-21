@@ -8,7 +8,7 @@ behaviour already exists and is tested)
 ## Statement
 
 - **Entry points.** With `WFC_MSWINSCK_SHARED` the library is built as
-  `wfcmswinsck.dll`, which exports the four COM entry points
+  `mswinsck.ocx`, which exports the four COM entry points
   (`DllRegisterServer`, `DllUnregisterServer`, `DllGetClassObject` and
   `DllCanUnloadNow`); `DllCanUnloadNow` answers `S_OK` when no object is alive.
 - **Version resource.** The DLL carries a version resource whose file version

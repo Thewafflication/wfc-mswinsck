@@ -3,7 +3,7 @@
 //
 // The table is plain data. It is linked statically into the program or, when
 // the library is built shared (WFC_MSWINSCK_SHARED), loaded from
-// wfcmswinsck.dll; only the accessor crosses the library boundary.
+// mswinsck.ocx; only the accessor crosses the library boundary.
 
 #ifndef WFC_MSWINSCK_MSWINSCK_HPP
 #define WFC_MSWINSCK_MSWINSCK_HPP

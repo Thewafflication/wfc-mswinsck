@@ -1,6 +1,6 @@
 # wfc-mswinsck roadmap
 
-Library: **Winsock** (`wfcmswinsck.dll`), the WFC replacement for `mswinsck.ocx`.
+Library: **Winsock** (`mswinsck.ocx`), the WFC replacement for `mswinsck.ocx`.
 Current version **0.6.1**, targeting **MSWINSCK.OCX 6.1.98 (Visual Basic 6.0 SP6)**.
 
 The version stays `0.<target major>.<target minor>` until the library matches
