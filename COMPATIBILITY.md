@@ -1,6 +1,6 @@
 # wfc-mswinsck: compatibility with mswinsck.ocx
 
-Target: **MSWINSCK.OCX 6.1.98 (Visual Basic 6.0 SP6)**. Library version: **0.6.1**.
+Target: **MSWINSCK.OCX 6.1.98 (Visual Basic 6.0 SP6)**. Library version: **0.6.2**.
 
 Written by hand from the documented members of the control; the socket layer is `src/winsock_io.cpp`.
 

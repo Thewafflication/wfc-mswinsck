@@ -1,7 +1,7 @@
 # wfc-mswinsck roadmap
 
 Library: **Winsock** (`mswinsck.ocx`), the WFC replacement for `mswinsck.ocx`.
-Current version **0.6.1**, targeting **MSWINSCK.OCX 6.1.98 (Visual Basic 6.0 SP6)**.
+Current version **0.6.2**, targeting **MSWINSCK.OCX 6.1.98 (Visual Basic 6.0 SP6)**.
 
 The version stays `0.<target major>.<target minor>` until the library matches
 the Microsoft one functionally; then it takes the Microsoft version. A checked
@@ -19,7 +19,7 @@ item is present, tested and passing in CI; an unchecked one is planned.
 
 ## 0.6.x: where it is
 
-- [x] Version and target stamped into the DLL resource (0.6.1).
+- [x] Version and target stamped into the DLL resource (0.6.2).
 - [x] `DllRegisterServer` and `DllUnregisterServer` (WFC ProgIDs and class ids;
       the Microsoft ids on request).
 - [x] A C program tests the DLL (exports, version, registration round trip).
